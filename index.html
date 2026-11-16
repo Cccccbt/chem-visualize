@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8">
-<meta name="version" content="1.72"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="version" content="1.73"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Chem Visualize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -690,10 +690,14 @@ body.side-off .app > .panel{display:none}
 #pCanvas{cursor:crosshair}
 #pCanvas:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .pmol{display:block;width:100%;height:150px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
-.pproc{display:flex;flex-direction:column;gap:5px}
-.pproc button{border:1px solid var(--line);background:var(--raise);border-radius:6px;padding:7px 10px;font-size:12.5px;text-align:left}
-.pproc button:hover{border-color:var(--accent)}
-.pproc button[aria-pressed="true"]{border-color:#FFD27A;background:rgba(255,210,122,.08);color:#FFD27A}
+.pproc{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pproc button,.ppick{border:1px solid var(--line);background:var(--raise);border-radius:6px;padding:7px 10px;font-size:12.5px;font-weight:600;text-align:left;display:flex;flex-direction:column;gap:1px}
+.pproc button.wide{grid-column:1/-1}
+.pproc small,.ppick small{font-weight:400;font-size:11.5px;color:var(--muted)}
+.pproc button:hover,.ppick:hover{border-color:var(--accent)}
+.pproc button[aria-pressed="true"],.ppick[aria-pressed="true"]{border-color:#FFD27A;background:rgba(255,210,122,.08);color:#FFD27A}
+.ppick{width:100%;margin-top:8px;border-style:dashed}
+.plog small{display:block;color:var(--muted);font-size:11.5px}
 .plog{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
 .plog:empty{display:none}
 .pnote{margin:10px 0 0}.pnote:empty{display:none}
@@ -702,7 +706,7 @@ body.side-off .app > .panel{display:none}
 
 <header class="site">
   <a class="site-brand" href="#home"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><ellipse cx="10" cy="10" rx="8.5" ry="3.4"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(60 10 10)"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(120 10 10)"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg><span>Chem Visualize</span></a>
-  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.72 · updated 2026-11-16 · see the change history">v1.72</a>
+  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.73 · updated 2026-11-16 · see the change history">v1.73</a>
   <nav class="site-nav" id="siteNav" aria-label="Tools"></nav>
 </header>
 
@@ -713,7 +717,7 @@ body.side-off .app > .panel{display:none}
       <p>Interactive chemistry models that run in the browser. Pick a tool to start.</p>
     </header>
     <div id="homeTopics"></div>
-    <p class="home-ver">Version 1.72 · updated 2026-11-16 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
+    <p class="home-ver">Version 1.73 · updated 2026-11-16 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
   </div>
 </main>
 
@@ -1680,7 +1684,7 @@ body.side-off .app > .panel{display:none}
   <aside class="panel">
     <header class="brand">
       <h1>Phase Diagram</h1>
-      <p>Which phase is stable at each temperature and pressure. Drag the point, or run a process.</p>
+      <p>Which phase is stable at each temperature and pressure. Drag the point, play a phase change, or pick two points to watch the path between them.</p>
     </header>
 
     <section aria-label="Substance">
@@ -1697,9 +1701,10 @@ body.side-off .app > .panel{display:none}
       <dl class="readout" id="pRead" style="margin-top:12px"></dl>
     </section>
 
-    <section aria-label="Processes">
-      <h2 class="sec-h"><span>Processes</span><button type="button" class="ptbtn" id="pPlay">Pause</button></h2>
+    <section aria-label="Phase changes">
+      <h2 class="sec-h"><span>Phase changes</span><button type="button" class="ptbtn" id="pPlay">Pause</button></h2>
       <div class="pproc" id="pProc"></div>
+      <button type="button" class="ppick" id="pPick" aria-pressed="false"></button>
       <p class="ecap pnote" id="pNote"></p>
       <ol class="plog" id="pLog"></ol>
     </section>
@@ -8250,21 +8255,27 @@ const SUBS = {
     T: [200, 700], P: [1e-5, 3000],
     sch: {T: [[200, 0], [273.16, 0.3], [373.15, 0.52], [647.1, 0.8], [700, 1]], P: [[1e-5, 0], [0.006037, 0.22], [1, 0.45], [217.7, 0.75], [3000, 1]], tilt: -0.07},
     procs: [
-      {name: 'Heat ice at 1 atm', pts: [[230, 1], [480, 1]], note: 'The everyday heating path: melts at 0 °C, boils at 100 °C.'},
-      {name: 'Squeeze ice at −10 °C', pts: [[263.15, 0.5], [263.15, 2500]], note: 'Pressure melts ice, because the melting line leans left: liquid water is denser than ice.'},
-      {name: 'Freeze-drying (low pressure)', pts: [[230, 0.001], [300, 0.001]], note: 'Below the triple-point pressure there is no liquid: ice turns straight into vapour.'},
-      {name: 'Lower the pressure at 25 °C', pts: [[298.15, 1], [298.15, 0.002]], note: 'Water boils at room temperature once the pressure falls below its vapour pressure (0.031 atm).'},
-      {name: 'Liquid to gas without boiling', pts: [[373.15, 400], [700, 400], [700, 5]], note: 'Go around the critical point: the liquid turns into gas gradually, with no boiling at any moment.'}
+      {name: 'Melting', ch: 'solid → liquid', pts: [[253.15, 1], [293.15, 1]], note: 'Warm ice at 1 atm. It melts at 0 °C, the normal melting point. Melting is endothermic: heat breaks up the ordered lattice.'},
+      {name: 'Freezing', ch: 'liquid → solid', pts: [[293.15, 1], [253.15, 1]], note: 'Cool liquid water at 1 atm. It freezes at 0 °C and gives out the same heat that melting takes in (exothermic).'},
+      {name: 'Vaporization', ch: 'liquid → gas', pts: [[353.15, 1], [393.15, 1]], note: 'Heat water at 1 atm. It boils at 100 °C, where its vapour pressure reaches 1 atm. Endothermic.'},
+      {name: 'Condensation', ch: 'gas → liquid', pts: [[393.15, 1], [353.15, 1]], note: 'Cool steam at 1 atm. It condenses at 100 °C, giving out the heat of vaporization (exothermic).'},
+      {name: 'Sublimation', ch: 'solid → gas', pts: [[230, 0.001], [295, 0.001]], note: 'Warm ice at 0.001 atm, below the triple-point pressure (0.006 atm). No liquid can form, so ice turns straight into vapour — this is how freeze-drying works.'},
+      {name: 'Deposition', ch: 'gas → solid', pts: [[295, 0.001], [230, 0.001]], note: 'Cool water vapour at 0.001 atm. It turns straight into ice with no liquid in between — this is how frost forms.'},
+      {name: 'Melting by pressure', ch: 'squeeze ice at −10 °C', wide: true, pts: [[263.15, 0.5], [263.15, 2500]], note: 'Pressure melts ice, because the melting line leans left: liquid water is denser than ice.'},
+      {name: 'Around the critical point', ch: 'liquid → gas with no boiling', wide: true, pts: [[373.15, 400], [700, 400], [700, 5]], note: 'Go around the critical point: the liquid turns into gas gradually, with no boiling at any moment.'}
     ]},
   co2: {name: 'Carbon dioxide', f: 'CO<sub>2</sub>', tp: [216.55, 5.11], cp: [304.13, 72.8], nsp: 194.65,
     vapMid: [273.15, 34.4], subPt: [194.65, 1], fusSlope: 75,
     T: [150, 350], P: [1e-3, 1e4],
     sch: {T: [[150, 0], [194.65, 0.22], [216.55, 0.36], [304.13, 0.76], [350, 1]], P: [[1e-3, 0], [1, 0.25], [5.11, 0.42], [72.8, 0.7], [1e4, 1]], tilt: 0.07},
     procs: [
-      {name: 'Warm dry ice at 1 atm', pts: [[160, 1], [300, 1]], note: '1 atm is below the triple-point pressure (5.1 atm), so solid CO₂ sublimes at −78.5 °C instead of melting.'},
-      {name: 'Warm at 10 atm', pts: [[180, 10], [320, 10]], note: 'Above 5.1 atm, CO₂ can be a liquid: it melts, then boils.'},
-      {name: 'Compress gas at 20 °C', pts: [[293.15, 1], [293.15, 8000]], note: 'A fire extinguisher holds liquid CO₂ at about 57 atm. Far higher pressure freezes it.'},
-      {name: 'Liquid to gas without boiling', pts: [[280, 100], [330, 100], [330, 20]], note: 'Go around the critical point (31 °C, 73 atm): no boiling, no surface between liquid and gas.'}
+      {name: 'Melting', ch: 'solid → liquid', pts: [[200, 20], [240, 20]], note: 'Above the triple-point pressure (5.1 atm) solid CO₂ can melt. At 20 atm it melts at about −56 °C.'},
+      {name: 'Freezing', ch: 'liquid → solid', pts: [[240, 20], [200, 20]], note: 'Cool liquid CO₂ at 20 atm. It freezes at about −56 °C (exothermic).'},
+      {name: 'Vaporization', ch: 'liquid → gas', pts: [[240, 20], [280, 20]], note: 'Warm liquid CO₂ at 20 atm. It boils at about −20 °C, where its vapour pressure reaches 20 atm.'},
+      {name: 'Condensation', ch: 'gas → liquid', pts: [[293.15, 20], [293.15, 90]], note: 'Compress CO₂ gas at 20 °C. It condenses at about 57 atm — a fire extinguisher holds liquid CO₂ this way.'},
+      {name: 'Sublimation', ch: 'solid → gas', pts: [[160, 1], [230, 1]], note: '1 atm is below the triple-point pressure (5.1 atm), so dry ice sublimes at −78.5 °C instead of melting.'},
+      {name: 'Deposition', ch: 'gas → solid', pts: [[230, 1], [160, 1]], note: 'Cool CO₂ gas at 1 atm. Below −78.5 °C it turns straight into solid (dry-ice snow).'},
+      {name: 'Around the critical point', ch: 'liquid → gas with no boiling', wide: true, pts: [[280, 100], [330, 100], [330, 20]], note: 'Go around the critical point (31 °C, 73 atm): no boiling, no surface between liquid and gas.'}
     ]}
 };
 // vapour-pressure curve: quadratic in 1/T through triple point, one middle point and critical point
@@ -8327,9 +8338,10 @@ function nearLine(u, v, k) {
 /* ---------- names ---------- */
 const PH = {solid: {n: 'Solid', c: '#8FB0FF'}, liquid: {n: 'Liquid', c: '#6FD3C1'}, gas: {n: 'Gas', c: '#FFB86B'}, sc: {n: 'Supercritical fluid', c: '#C792EA'}};
 const LINE = {sub: 'Solid ⇌ gas (sublimation curve)', vap: 'Liquid ⇌ gas (vapour-pressure curve)', fus: 'Solid ⇌ liquid (melting curve)', tp: 'Triple point: solid, liquid and gas together'};
-const CHANGE = {'solid>liquid': 'melts', 'liquid>solid': 'freezes', 'liquid>gas': 'boils (vaporizes)', 'gas>liquid': 'condenses',
-  'solid>gas': 'sublimes', 'gas>solid': 'deposits (turns straight to solid)', 'liquid>sc': 'becomes a supercritical fluid — no boiling',
-  'sc>liquid': 'becomes liquid-like — no condensing', 'gas>sc': 'becomes a supercritical fluid', 'sc>gas': 'becomes gas-like — no boiling', 'solid>sc': 'becomes supercritical', 'sc>solid': 'freezes'};
+const CHANGE = {'solid>liquid': 'Melting', 'liquid>solid': 'Freezing', 'liquid>gas': 'Vaporization (boiling)', 'gas>liquid': 'Condensation',
+  'solid>gas': 'Sublimation', 'gas>solid': 'Deposition', 'liquid>sc': 'No phase change', 'sc>liquid': 'No phase change',
+  'gas>sc': 'No phase change', 'sc>gas': 'No phase change', 'solid>sc': 'Melting', 'sc>solid': 'Freezing'};
+const GRADUAL = 'gradual — no boundary is crossed, so nothing boils or condenses';
 const fmtP = P => P >= 100 ? `${Math.round(P)} atm` : P >= 1 ? `${P.toFixed(P >= 10 ? 1 : 2)} atm` : P >= 0.001 ? `${P.toPrecision(2)} atm` : `${P.toExponential(1).replace('-', MINUS)} atm`;
 const fmtT = T => `${Math.round(T)} K (${(T - 273.15 < 0 ? MINUS : '') + Math.abs(T - 273.15).toFixed(Math.abs(T - 273.15) < 10 ? 1 : 0)} °C)`;
 const cel = T => `${(T - 273.15 < -0.05 ? MINUS : '') + Math.abs(T - 273.15).toFixed(Math.abs(T - 273.15) < 10 ? 2 : 1).replace(/\.?0+$/, '')} °C`;
@@ -8338,6 +8350,7 @@ const cel = T => `${(T - 273.15 < -0.05 ? MINUS : '') + Math.abs(T - 273.15).toF
 let inited = false, cv, g, W = 0, H = 0, dpr = 1, raf = 0, last = 0;
 let pu = 0.5, pv = 0.5;                 // the point, in plot space
 let proc = null, playing = !calm, drag = false, phaseNow = null, logs = [];
+let pick = null;                        // picking two points: {a: [T, P] | null, hover: [u, v] | null}
 function box() { const l = 74, r = 28, t = 112, b = 62; return {x: l, y: t, w: Math.max(50, W - l - r), h: Math.max(50, H - t - b)}; }
 const X = (k, u) => k.x + u * k.w, Yv = (k, v) => k.y + (1 - v) * k.h;
 function resize() {
@@ -8398,7 +8411,15 @@ function draw() {
     line(pts, 'rgba(255,210,122,.35)', 3, [6, 6]);
     const done = proc.trail; if (done.length > 1) line(done.map(([u, v]) => [X(k, u), Yv(k, v)]), '#FFD27A', 3);
   }
+  if (pick && pick.a && pick.hover) line([[X(k, U(pick.a[0])), Yv(k, V(pick.a[1]))], [X(k, pick.hover[0]), Yv(k, pick.hover[1])]], 'rgba(255,210,122,.6)', 2, [6, 6]);
   g.restore();
+  if (pick) {
+    const msg = pick.a ? 'Click the end point B' : 'Click the start point A';
+    g.font = '600 12.5px "IBM Plex Sans",sans-serif'; const tw = g.measureText(msg).width + 24, cx = k.x + k.w / 2, cy = k.y - 22;
+    g.fillStyle = 'rgba(255,210,122,.14)'; g.strokeStyle = 'rgba(255,210,122,.6)'; g.lineWidth = 1;
+    g.beginPath(); g.roundRect ? g.roundRect(cx - tw / 2, cy - 13, tw, 26, 13) : g.rect(cx - tw / 2, cy - 13, tw, 26); g.fill(); g.stroke();
+    txt(msg, cx, cy, '#FFD27A', 12.5, 600);
+  }
 
   // key points
   const dot = (u, v, col, r = 5) => { g.beginPath(); g.arc(X(k, u), Yv(k, v), r, 0, 7); g.fillStyle = col; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 1.5; g.stroke(); };
@@ -8436,6 +8457,14 @@ function draw() {
   const px = X(k, pu), py = Yv(k, pv), ph = phaseAt(pu, pv);
   g.beginPath(); g.arc(px, py, 11, 0, 7); g.fillStyle = alpha(PH[ph].c, 0.25); g.fill();
   g.beginPath(); g.arc(px, py, 6.5, 0, 7); g.fillStyle = PH[ph].c; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 2; g.stroke();
+  // A and B ends of a picked path: a ring at the spot and a lettered tag beside it
+  const ends = pick ? (pick.a ? [pick.a] : []) : proc && proc.p.custom ? proc.p.pts : [];
+  ends.forEach(([T, P], i) => {
+    const x = X(k, U(T)), y = Yv(k, V(P)), tx = x + 15, ty = y - 15;
+    g.beginPath(); g.arc(x, y, 10, 0, 7); g.strokeStyle = '#FFD27A'; g.lineWidth = 2; g.stroke();
+    g.beginPath(); g.arc(tx, ty, 9, 0, 7); g.fillStyle = '#FFD27A'; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 1.5; g.stroke();
+    txt(i ? 'B' : 'A', tx, ty + 0.5, '#0A0D12', 11, 700);
+  });
 }
 const sup = e => String(e).split('').map(c => '⁻⁰¹²³⁴⁵⁶⁷⁸⁹'[c === '-' ? 0 : +c + 1]).join('');
 
@@ -8513,54 +8542,71 @@ function molDraw() {
 /* ---------- processes ---------- */
 function startProc(i) {
   const p = sub().procs[i];
-  // sample the path in plot space, evenly by on-screen length
+  pick = null;
   proc = {p, i, s: 0, trail: [], prev: null};
   logs = [];
   playing = true;
   renderPanel();
 }
+function startCustom(a, b) {
+  const ph = ([T, P]) => PH[phaseAt(U(T), V(P))].n.toLowerCase();
+  const at = ([T, P]) => S.axes === 'log' ? ` (${cel(T)}, ${fmtP(P)})` : '';
+  const p = {custom: true, pts: [a, b], note: `Straight path from <b>A</b>, ${ph(a)}${at(a)}, to <b>B</b>, ${ph(b)}${at(b)}.`};
+  pick = null;
+  proc = {p, i: -1, s: 0, trail: [], prev: null};
+  logs = []; playing = true;
+  renderPanel();
+}
 function procPoint(p, s) {
-  // piecewise in (T, ln P); segments weighted by their plot-space length
-  const segs = [];
+  // straight segments in plot space, travelled at constant on-screen speed; returns [u, v]
+  const q = p.pts.map(([T, P]) => [U(T), V(P)]), L = [];
   let tot = 0;
-  for (let i = 1; i < p.pts.length; i++) {
-    const a = p.pts[i - 1], b = p.pts[i];
-    const L = Math.hypot(U(b[0]) - U(a[0]), V(b[1]) - V(a[1]));
-    segs.push([a, b, L]); tot += L;
-  }
+  for (let i = 1; i < q.length; i++) { L.push(Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1])); tot += L[i - 1]; }
   let x = s * tot;
-  for (const [a, b, L] of segs) {
-    if (x <= L || segs[segs.length - 1][0] === a) { const f = Math.min(1, x / L); return [a[0] + (b[0] - a[0]) * f, Math.exp(ln(a[1]) + (ln(b[1]) - ln(a[1])) * f)]; }
-    x -= L;
+  for (let i = 1; i < q.length; i++) {
+    const l = L[i - 1];
+    if (x <= l || i === q.length - 1) { const f = l > 0 ? Math.min(1, x / l) : 1; return [q[i - 1][0] + (q[i][0] - q[i - 1][0]) * f, q[i - 1][1] + (q[i][1] - q[i - 1][1]) * f]; }
+    x -= l;
   }
+  return q[0];
 }
 function stepProc(dt) {
   if (!proc || proc.s >= 1) return;
+  if (proc.s === 0) { [pu, pv] = procPoint(proc.p, 0); proc.trail = [[pu, pv]]; }
   const before = phaseAt(pu, pv);
-  proc.s = Math.min(1, proc.s + dt / 9);
-  const [T, P] = procPoint(proc.p, proc.s);
-  pu = U(T); pv = V(P);
+  proc.s = Math.min(1, proc.s + dt / (proc.p.custom ? 6 : 9));
+  [pu, pv] = procPoint(proc.p, proc.s);
+  const T = Tof(pu), P = Pof(pv);
   proc.trail.push([pu, pv]);
   const after = phaseAt(pu, pv);
-  if (after !== before && proc.trail.length > 1) {
-    const what = CHANGE[`${before}>${after}`] || `${PH[before].n} → ${PH[after].n}`;
-    logs.push(S.axes === 'log' ? `${what} at ${fmtT(T)}, ${fmtP(P)}` : `${what}`);
+  if (after !== before) {
+    const key = `${before}>${after}`, what = CHANGE[key] || 'Change';
+    const at = S.axes === 'log' ? ` at ${cel(T)}, ${fmtP(P)}` : '';
+    logs.push(`<b>${what}</b>: ${PH[before].n.toLowerCase()} → ${PH[after].n.toLowerCase()}${at}${what === 'No phase change' ? `<small>${GRADUAL}</small>` : ''}`);
     renderLog();
   }
-  if (proc.s >= 1) { renderPanel(); }
+  if (proc.s >= 1) {
+    if (!logs.length) { logs.push(`<b>No phase change</b>: stays ${PH[after].n.toLowerCase()} the whole way`); }
+    S.pt[S.s] = [T, P]; save();
+    renderPanel();
+  }
 }
 
 /* ---------- panel ---------- */
 function renderLog() {
   $('#pNote').innerHTML = proc ? proc.p.note : '';
-  $('#pLog').innerHTML = proc ? logs.map(l => `<li>${l.charAt(0).toUpperCase() + l.slice(1)}</li>`).join('') : '';
+  $('#pLog').innerHTML = proc ? logs.map(l => `<li>${l}</li>`).join('') : '';
 }
 function renderPanel() {
   const s = sub();
   document.querySelectorAll('#pSub2 button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === S.s)));
   document.querySelectorAll('#pAxes button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.a === S.axes)));
   $('#pTitle').innerHTML = `${s.name} <span class="ifm">${s.f}</span>`;
-  $('#pProc').innerHTML = s.procs.map((p, i) => `<button type="button" data-i="${i}" aria-pressed="${proc && proc.i === i}">${p.name}</button>`).join('');
+  $('#pProc').innerHTML = s.procs.map((p, i) => `<button type="button" data-i="${i}"${p.wide ? ' class="wide"' : ''} aria-pressed="${!!proc && proc.i === i}">${p.name}<small>${p.ch}</small></button>`).join('');
+  const pk = $('#pPick');
+  pk.setAttribute('aria-pressed', String(!!pick || !!(proc && proc.p.custom)));
+  pk.innerHTML = pick ? (pick.a ? 'Now click point B… <small>Esc to cancel</small>' : 'Click point A on the diagram… <small>Esc to cancel</small>')
+    : proc && proc.p.custom ? 'Pick two new points <small>A → B</small>' : 'Pick two points <small>click A, then B, to play the path between them</small>';
   $('#pPlay').textContent = proc && proc.s < 1 ? (playing ? 'Pause' : 'Play') : 'Clear';
   $('#pPlay').hidden = !proc;
   const k = [];
@@ -8611,23 +8657,34 @@ function setFromEvent(e) {
   S.pt[S.s] = [Tof(pu), Pof(pv)]; save();
   renderPoint(); draw();
 }
-function setSub(id) { S.s = id; proc = null; logs = []; const [T, P] = S.pt[id]; pu = U(T); pv = V(P); save(); renderPanel(); draw(); }
+function setSub(id) { S.s = id; proc = null; pick = null; logs = []; const [T, P] = S.pt[id]; pu = U(T); pv = V(P); save(); renderPanel(); draw(); }
 function bind() {
   cv = $('#pCanvas'); g = cv.getContext('2d');
   cv.addEventListener('pointerdown', e => {
     const r = cv.getBoundingClientRect(), k = box();
     const x = e.clientX - r.left, y = e.clientY - r.top;
     if (x < k.x - 10 || x > k.x + k.w + 10 || y < k.y - 10 || y > k.y + k.h + 10) return;
+    if (pick) {
+      const u = Math.min(1, Math.max(0, (x - k.x) / k.w)), v = Math.min(1, Math.max(0, 1 - (y - k.y) / k.h)), tp = [Tof(u), Pof(v)];
+      if (!pick.a) { pick.a = tp; pick.hover = [u, v]; pu = u; pv = v; renderPanel(); draw(); }
+      else startCustom(pick.a, tp);
+      e.preventDefault(); return;
+    }
     drag = true; proc = null; logs = []; renderPanel(); cv.setPointerCapture(e.pointerId); setFromEvent(e); e.preventDefault();
   });
-  cv.addEventListener('pointermove', e => { if (drag) setFromEvent(e); });
+  cv.addEventListener('pointermove', e => {
+    if (drag) setFromEvent(e);
+    else if (pick && pick.a) { const r = cv.getBoundingClientRect(), k = box(); pick.hover = [Math.min(1, Math.max(0, (e.clientX - r.left - k.x) / k.w)), Math.min(1, Math.max(0, 1 - (e.clientY - r.top - k.y) / k.h))]; }
+  });
+  $('#pPick').addEventListener('click', () => { if (pick) pick = null; else { pick = {a: null, hover: null}; proc = null; logs = []; cv.focus(); } renderPanel(); draw(); });
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && pick && !$('#pApp').hidden) { pick = null; renderPanel(); draw(); } });
   const end = () => { drag = false; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
   $('#pSub2').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSub(b.dataset.s); });
   $('#pAxes').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const T = Tof(pu), P = Pof(pv);
     S.axes = b.dataset.a; save();
-    if (proc) { proc.trail = []; const [t2, p2] = procPoint(proc.p, proc.s); pu = U(t2); pv = V(p2); }
+    if (proc) { [pu, pv] = procPoint(proc.p, proc.s); proc.trail = []; if (proc.p.custom && proc.s >= 1) proc.trail = Array.from({length: 61}, (_, i) => procPoint(proc.p, i / 60)); }
     else { pu = Math.min(1, Math.max(0, U(T))); pv = Math.min(1, Math.max(0, V(P))); }
     renderPanel(); draw();
   });
@@ -8639,7 +8696,7 @@ function bind() {
     const d = e.shiftKey ? 0.05 : 0.01;
     if (e.key === 'ArrowLeft') pu = Math.max(0, pu - d); else if (e.key === 'ArrowRight') pu = Math.min(1, pu + d);
     else if (e.key === 'ArrowUp') pv = Math.min(1, pv + d); else if (e.key === 'ArrowDown') pv = Math.max(0, pv - d); else return;
-    e.preventDefault(); proc = null; S.pt[S.s] = [Tof(pu), Pof(pv)]; save(); renderPanel(); draw();
+    e.preventDefault(); proc = null; pick = null; S.pt[S.s] = [Tof(pu), Pof(pv)]; save(); renderPanel(); draw();
   });
   new ResizeObserver(resize).observe($('#pViewer'));
   new ResizeObserver(resize).observe($('#pMol'));
