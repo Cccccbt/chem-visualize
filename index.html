@@ -7171,7 +7171,7 @@ function pairStep(dt) {
     PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
   } else if (S.mode === 'all') {
     // flickering clouds for the L layer: A fluctuates, B follows
-    const amp = 0.35, k1 = Math.exp(-dt / 0.32), k2 = amp * Math.sqrt(1 - k1 * k1);
+    const amp = allAmp(s), k1 = Math.exp(-dt / 0.32), k2 = amp * Math.sqrt(1 - k1 * k1);
     PT.dA = [PT.dA[0] * k1 + k2 * gauss(), PT.dA[1] * k1 + k2 * gauss()];
     PT.nB = [PT.nB[0] * k1 + 0.22 * k2 * gauss(), PT.nB[1] * k1 + 0.22 * k2 * gauss()];
     PT.dB = [0.7 * PT.dA[0] + PT.nB[0], -0.35 * PT.dA[1] + PT.nB[1]];
@@ -7390,6 +7390,8 @@ function allPlace(s) {
   // centre the pair vertically on its atoms
   return allCache[s.id] = {A, B};
 }
+// how far the cloud can shift: bigger, more polarizable clouds slosh further (same rule as the dispersion close-up)
+const allAmp = s => Math.max(...molExt(s)) * (0.08 + 0.09 * Math.cbrt(s.alpha || 1));
 function molExt(s) {   // half-widths of the molecule in its own frame, for its electron cloud
   let ex = 0, ey = 0;
   for (const a of s.site) { ex = Math.max(ex, Math.abs(a.x) + a.rad * 0.85); ey = Math.max(ey, Math.abs(a.y) + a.rad * 0.85); }
@@ -7404,8 +7406,8 @@ function drawPairAll(L) {
   // L: electron clouds that flicker; the right one follows the left one
   if (Ly.L) {
     const [ex, ey] = molExt(s);
-    drawCloudRot(cx + A.x * k, cy + A.y * k, ex, ey, A.a, PT.dA, 0.35, k);
-    drawCloudRot(cx + B.x * k, cy + B.y * k, ex, ey, B.a, PT.dB, 0.35, k);
+    drawCloudRot(cx + A.x * k, cy + A.y * k, ex, ey, A.a, PT.dA, allAmp(s), k);
+    drawCloudRot(cx + B.x * k, cy + B.y * k, ex, ey, B.a, PT.dB, allAmp(s), k);
   }
   const PA = drawMol(s, A.x, A.y, A.a, k, cx, cy, {labels: true, bs: true, lp: Ly.H && !!s.hb});
   const PB = drawMol(s, B.x, B.y, B.a, k, cx, cy, {labels: true, bs: true, lp: Ly.H && !!s.hb});
