@@ -675,6 +675,19 @@ body.side-off .app > .panel{display:none}
 .ucst b{font:500 12.5px/1.45 var(--f-mono);overflow-wrap:anywhere}
 .ucst sup{font-size:.75em}
 .ucst.res b{color:var(--accent);font-size:13.5px}
+/* ---------- phase diagram ---------- */
+#pApp [hidden]{display:none!important}
+#pCanvas{cursor:crosshair}
+#pCanvas:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pmol{display:block;width:100%;height:150px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+.pproc{display:flex;flex-direction:column;gap:5px}
+.pproc button{border:1px solid var(--line);background:var(--raise);border-radius:6px;padding:7px 10px;font-size:12.5px;text-align:left}
+.pproc button:hover{border-color:var(--accent)}
+.pproc button[aria-pressed="true"]{border-color:#FFD27A;background:rgba(255,210,122,.08);color:#FFD27A}
+.plog{margin:10px 0 0;padding-left:18px;font-size:12.5px;line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.plog:empty{display:none}
+.pnote{margin:10px 0 0}.pnote:empty{display:none}
+.plog li::marker{color:#FFD27A}
 </style>
 
 <header class="site">
@@ -1628,6 +1641,57 @@ body.side-off .app > .panel{display:none}
 
     <p class="note" id="uHow"></p>
     <p class="note"><b>Data.</b> Lattice constants at room temperature and densities from the CRC Handbook. Ionic radii (Shannon) are scaled slightly so neighbouring ions just touch in the picture.</p>
+  </aside>
+</div>
+<div class="app" id="pApp" hidden>
+  <main class="viewer" id="pViewer">
+    <canvas id="pCanvas" role="img" aria-label="Phase diagram: pressure against temperature, with a movable point"></canvas>
+    <div class="hud hud-tl">
+      <div class="qtitle"><div class="tprop" id="pTitle"></div><div class="qtuple" id="pSub"></div></div>
+      <div class="chip" id="pPhase" role="status"></div>
+    </div>
+    <div class="hud hud-tr">
+      <div class="seg ivw" role="radiogroup" aria-label="Axes" id="pAxes">
+        <button type="button" role="radio" data-a="sch" title="Textbook sketch: key points spread out, not to scale">Textbook sketch</button>
+        <button type="button" role="radio" data-a="log" title="Real values, pressure on a log scale">To scale (log P)</button>
+      </div>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <header class="brand">
+      <h1>Phase Diagram</h1>
+      <p>Which phase is stable at each temperature and pressure. Drag the point, or run a process.</p>
+    </header>
+
+    <section aria-label="Substance">
+      <h2 class="sec-h">Substance</h2>
+      <div class="seg" role="radiogroup" aria-label="Substance" id="pSub2">
+        <button type="button" role="radio" data-s="h2o">Water H<sub>2</sub>O</button>
+        <button type="button" role="radio" data-s="co2">Carbon dioxide CO<sub>2</sub></button>
+      </div>
+    </section>
+
+    <section aria-label="Point">
+      <h2 class="sec-h">At the point</h2>
+      <canvas id="pMol" class="pmol" role="img" aria-label="Particles in the current phase"></canvas>
+      <dl class="readout" id="pRead" style="margin-top:12px"></dl>
+    </section>
+
+    <section aria-label="Processes">
+      <h2 class="sec-h"><span>Processes</span><button type="button" class="ptbtn" id="pPlay">Pause</button></h2>
+      <div class="pproc" id="pProc"></div>
+      <p class="ecap pnote" id="pNote"></p>
+      <ol class="plog" id="pLog"></ol>
+    </section>
+
+    <section aria-label="Key points">
+      <h2 class="sec-h">Key points</h2>
+      <dl class="readout" id="pKeys"></dl>
+    </section>
+
+    <p class="note" id="pHow"></p>
+    <p class="note"><b>Data.</b> Triple and critical points and normal transition temperatures from NIST. Curves are smooth fits through those points (Clausius–Clapeyron for sublimation); the CO<sub>2</sub> melting line slope is approximate. Water’s line is ice I only — at very high pressure other ice forms appear.</p>
   </aside>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -7902,6 +7966,424 @@ window.initCells = function () {
 };
 })();
 </script>
+<script id="phaseDiagram">
+/* ===== phase-diagram page ===== */
+(() => {
+const $ = s => document.querySelector(s);
+const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const MINUS = '−';
+const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const R = 8.314462;
+const ln = Math.log;
+
+/* ---------- substances (T in K, P in atm) ---------- */
+const SUBS = {
+  h2o: {name: 'Water', f: 'H<sub>2</sub>O', tp: [273.16, 0.006037], cp: [647.1, 217.7], nbp: 373.15, nmp: 273.15,
+    vapMid: [373.15, 1], dHsub: 51060, fusSlope: -133,   // atm/K: ice is less dense than water
+    T: [200, 700], P: [1e-5, 3000],
+    sch: {T: [[200, 0], [273.16, 0.3], [373.15, 0.52], [647.1, 0.8], [700, 1]], P: [[1e-5, 0], [0.006037, 0.22], [1, 0.45], [217.7, 0.75], [3000, 1]], tilt: -0.07},
+    procs: [
+      {name: 'Heat ice at 1 atm', pts: [[230, 1], [480, 1]], note: 'The everyday heating path: melts at 0 °C, boils at 100 °C.'},
+      {name: 'Squeeze ice at −10 °C', pts: [[263.15, 0.5], [263.15, 2500]], note: 'Pressure melts ice, because the melting line leans left: liquid water is denser than ice.'},
+      {name: 'Freeze-drying (low pressure)', pts: [[230, 0.001], [300, 0.001]], note: 'Below the triple-point pressure there is no liquid: ice turns straight into vapour.'},
+      {name: 'Lower the pressure at 25 °C', pts: [[298.15, 1], [298.15, 0.002]], note: 'Water boils at room temperature once the pressure falls below its vapour pressure (0.031 atm).'},
+      {name: 'Liquid to gas without boiling', pts: [[373.15, 400], [700, 400], [700, 5]], note: 'Go around the critical point: the liquid turns into gas gradually, with no boiling at any moment.'}
+    ]},
+  co2: {name: 'Carbon dioxide', f: 'CO<sub>2</sub>', tp: [216.55, 5.11], cp: [304.13, 72.8], nsp: 194.65,
+    vapMid: [273.15, 34.4], subPt: [194.65, 1], fusSlope: 75,
+    T: [150, 350], P: [1e-3, 1e4],
+    sch: {T: [[150, 0], [194.65, 0.22], [216.55, 0.36], [304.13, 0.76], [350, 1]], P: [[1e-3, 0], [1, 0.25], [5.11, 0.42], [72.8, 0.7], [1e4, 1]], tilt: 0.07},
+    procs: [
+      {name: 'Warm dry ice at 1 atm', pts: [[160, 1], [300, 1]], note: '1 atm is below the triple-point pressure (5.1 atm), so solid CO₂ sublimes at −78.5 °C instead of melting.'},
+      {name: 'Warm at 10 atm', pts: [[180, 10], [320, 10]], note: 'Above 5.1 atm, CO₂ can be a liquid: it melts, then boils.'},
+      {name: 'Compress gas at 20 °C', pts: [[293.15, 1], [293.15, 8000]], note: 'A fire extinguisher holds liquid CO₂ at about 57 atm. Far higher pressure freezes it.'},
+      {name: 'Liquid to gas without boiling', pts: [[280, 100], [330, 100], [330, 20]], note: 'Go around the critical point (31 °C, 73 atm): no boiling, no surface between liquid and gas.'}
+    ]}
+};
+// vapour-pressure curve: quadratic in 1/T through triple point, one middle point and critical point
+for (const k in SUBS) {
+  const s = SUBS[k], pts = [s.tp, s.vapMid, s.cp].map(([T, P]) => [1 / T, ln(P)]);
+  const [[x0, y0], [x1, y1], [x2, y2]] = pts;
+  // Lagrange form
+  s.lnPvap = T => { const x = 1 / T; return y0 * (x - x1) * (x - x2) / ((x0 - x1) * (x0 - x2)) + y1 * (x - x0) * (x - x2) / ((x1 - x0) * (x1 - x2)) + y2 * (x - x0) * (x - x1) / ((x2 - x0) * (x2 - x1)); };
+  const B = s.dHsub ? s.dHsub / R : ln(s.tp[1] / s.subPt[1]) / (1 / s.subPt[0] - 1 / s.tp[0]);
+  s.dHsubFit = B * R;
+  s.lnPsub = T => ln(s.tp[1]) - B * (1 / T - 1 / s.tp[0]);
+  s.Tfus = P => s.tp[0] + (P - s.tp[1]) / s.fusSlope;
+}
+
+/* ---------- state ---------- */
+const DEF = {s: 'h2o', axes: 'sch', pt: {h2o: [373.15 - 60, 1], co2: [250, 20]}};
+const S = JSON.parse(JSON.stringify(DEF));
+try { const o = JSON.parse(ls.get('aov.phase') || '{}'); Object.assign(S, o, {pt: Object.assign({}, DEF.pt, o.pt || {})}); } catch (e) {}
+if (!(S.s in SUBS)) S.s = 'h2o';
+if (S.axes !== 'log') S.axes = 'sch';
+const save = () => ls.set('aov.phase', JSON.stringify(S));
+const sub = () => SUBS[S.s];
+
+/* ---------- axes: (T, P) ↔ plot space (u, v) in [0, 1]² ---------- */
+function pw(knots, x) {   // piecewise linear, knots [[x, y]…] increasing
+  if (x <= knots[0][0]) { const [a, b] = knots; return a[1] + (x - a[0]) * (b[1] - a[1]) / (b[0] - a[0]); }
+  for (let i = 1; i < knots.length; i++) if (x <= knots[i][0] || i === knots.length - 1) { const a = knots[i - 1], b = knots[i]; return a[1] + (x - a[0]) * (b[1] - a[1]) / (b[0] - a[0]); }
+}
+const flip = k => k.map(([a, b]) => [b, a]);
+function U(T) { const s = sub(); return S.axes === 'log' ? (T - s.T[0]) / (s.T[1] - s.T[0]) : pw(s.sch.T, T); }
+function V(P) { const s = sub(); return S.axes === 'log' ? (ln(P) - ln(s.P[0])) / (ln(s.P[1]) - ln(s.P[0])) : pw(s.sch.P.map(([p, v]) => [ln(p), v]), ln(P)); }
+function Tof(u) { const s = sub(); return S.axes === 'log' ? s.T[0] + u * (s.T[1] - s.T[0]) : pw(flip(s.sch.T), u); }
+function Pof(v) { const s = sub(); return Math.exp(S.axes === 'log' ? ln(s.P[0]) + v * (ln(s.P[1]) - ln(s.P[0])) : pw(flip(s.sch.P.map(([p, w]) => [ln(p), w])), v)); }
+const utp = () => U(sub().tp[0]), vtp = () => V(sub().tp[1]), uc = () => U(sub().cp[0]), vc = () => V(sub().cp[1]);
+// boundary curves in plot space
+const vSub = u => V(Math.exp(sub().lnPsub(Tof(u))));
+const vVap = u => V(Math.exp(sub().lnPvap(Tof(u))));
+function uFus(v) {
+  if (S.axes === 'sch') return utp() + sub().sch.tilt * (v - vtp());
+  return U(sub().Tfus(Pof(v)));
+}
+function phaseAt(u, v) {
+  const ut = utp(), vt = vtp();
+  if (v < vt) return u < ut && v > vSub(u) ? 'solid' : u < ut ? 'gas' : 'gas';
+  if (u < uFus(v)) return 'solid';
+  if (u >= uc()) return v >= vc() ? 'sc' : 'gas';
+  return v > vVap(u) ? 'liquid' : 'gas';
+}
+// distance (in px) from the point to each boundary, to report equilibria
+function nearLine(u, v, k) {
+  const ut = utp(), vt = vtp(), d = [];
+  if (u <= ut + 0.002) d.push(['sub', Math.abs(v - vSub(u)) * k.h]);
+  if (u >= ut - 0.002 && u <= uc()) d.push(['vap', Math.abs(v - vVap(u)) * k.h]);
+  if (v >= vt - 0.002) d.push(['fus', Math.abs(u - uFus(v)) * k.w]);
+  d.push(['tp', Math.hypot((u - ut) * k.w, (v - vt) * k.h) * 0.6]);
+  d.sort((a, b) => a[1] - b[1]);
+  return d[0][1] < 7 ? d[0][0] : null;
+}
+
+/* ---------- names ---------- */
+const PH = {solid: {n: 'Solid', c: '#8FB0FF'}, liquid: {n: 'Liquid', c: '#6FD3C1'}, gas: {n: 'Gas', c: '#FFB86B'}, sc: {n: 'Supercritical fluid', c: '#C792EA'}};
+const LINE = {sub: 'Solid ⇌ gas (sublimation curve)', vap: 'Liquid ⇌ gas (vapour-pressure curve)', fus: 'Solid ⇌ liquid (melting curve)', tp: 'Triple point: solid, liquid and gas together'};
+const CHANGE = {'solid>liquid': 'melts', 'liquid>solid': 'freezes', 'liquid>gas': 'boils (vaporizes)', 'gas>liquid': 'condenses',
+  'solid>gas': 'sublimes', 'gas>solid': 'deposits (turns straight to solid)', 'liquid>sc': 'becomes a supercritical fluid — no boiling',
+  'sc>liquid': 'becomes liquid-like — no condensing', 'gas>sc': 'becomes a supercritical fluid', 'sc>gas': 'becomes gas-like — no boiling', 'solid>sc': 'becomes supercritical', 'sc>solid': 'freezes'};
+const fmtP = P => P >= 100 ? `${Math.round(P)} atm` : P >= 1 ? `${P.toFixed(P >= 10 ? 1 : 2)} atm` : P >= 0.001 ? `${P.toPrecision(2)} atm` : `${P.toExponential(1).replace('-', MINUS)} atm`;
+const fmtT = T => `${Math.round(T)} K (${(T - 273.15 < 0 ? MINUS : '') + Math.abs(T - 273.15).toFixed(Math.abs(T - 273.15) < 10 ? 1 : 0)} °C)`;
+const cel = T => `${(T - 273.15 < -0.05 ? MINUS : '') + Math.abs(T - 273.15).toFixed(Math.abs(T - 273.15) < 10 ? 2 : 1).replace(/\.?0+$/, '')} °C`;
+
+/* ---------- canvas ---------- */
+let inited = false, cv, g, W = 0, H = 0, dpr = 1, raf = 0, last = 0;
+let pu = 0.5, pv = 0.5;                 // the point, in plot space
+let proc = null, playing = !calm, drag = false, phaseNow = null, logs = [];
+function box() { const l = 74, r = 28, t = 112, b = 62; return {x: l, y: t, w: Math.max(50, W - l - r), h: Math.max(50, H - t - b)}; }
+const X = (k, u) => k.x + u * k.w, Yv = (k, v) => k.y + (1 - v) * k.h;
+function resize() {
+  const r = $('#pViewer').getBoundingClientRect();
+  dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const m = $('#pMol'), mr = m.getBoundingClientRect();
+  m.width = Math.round(mr.width * dpr); m.height = Math.round(mr.height * dpr);
+  draw();
+}
+function txt(s, x, y, col, size = 12, w = 500, align = 'center', base = 'middle') { g.font = `${w} ${size}px "IBM Plex Sans",sans-serif`; g.fillStyle = col; g.textAlign = align; g.textBaseline = base; g.fillText(s, x, y); }
+function curve(k, f, u0, u1, n = 120) {   // polyline of v = f(u)
+  const pts = []; for (let i = 0; i <= n; i++) { const u = u0 + (u1 - u0) * i / n; pts.push([X(k, u), Yv(k, f(u))]); } return pts;
+}
+function fusPts(k, n = 60) { const pts = []; const v0 = vtp(); for (let i = 0; i <= n; i++) { const v = v0 + (1.05 - v0) * i / n; pts.push([X(k, uFus(v)), Yv(k, v)]); } return pts; }
+function poly(pts, fill) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fillStyle = fill; g.fill(); }
+function line(pts, col, w = 2.5, dash) { g.save(); if (dash) g.setLineDash(dash); g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.stroke(); g.restore(); }
+const alpha = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+
+function draw() {
+  if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const s = sub(), k = box(), ut = utp(), vt = vtp(), ucr = uc(), vcr = vc();
+  const subC = curve(k, vSub, -0.05, ut), vapC = curve(k, vVap, ut, ucr), fusC = fusPts(k);
+  const far = 4;   // polygons reach well past the frame and get clipped
+  g.save(); g.beginPath(); g.rect(k.x, k.y, k.w, k.h); g.clip();
+  // regions
+  poly([...subC, ...fusC, [X(k, -0.2), Yv(k, 1.2)], [X(k, -0.2), subC[0][1]]], alpha(PH.solid.c, 0.13));
+  poly([...fusC, [X(k, ucr), Yv(k, 1.2)], [X(k, ucr), Yv(k, vcr)], ...[...vapC].reverse()], alpha(PH.liquid.c, 0.13));
+  poly([[X(k, -0.2), Yv(k, -far)], [X(k, 1.2), Yv(k, -far)], [X(k, 1.2), Yv(k, vcr)], ...[...vapC].reverse(), ...[...subC].reverse(), [X(k, -0.2), subC[0][1]]], alpha(PH.gas.c, 0.11));
+  poly([[X(k, ucr), Yv(k, vcr)], [X(k, 1.2), Yv(k, vcr)], [X(k, 1.2), Yv(k, 1.2)], [X(k, ucr), Yv(k, 1.2)]], alpha(PH.sc.c, 0.13));
+  // grid / guides
+  g.lineWidth = 1;
+  if (S.axes === 'log') {
+    for (let e = Math.ceil(Math.log10(s.P[0])); e <= Math.floor(Math.log10(s.P[1])); e++) { const y = Yv(k, V(10 ** e)); g.strokeStyle = 'rgba(37,44,55,.9)'; g.beginPath(); g.moveTo(k.x, y); g.lineTo(k.x + k.w, y); g.stroke(); }
+    const step = s.T[1] - s.T[0] > 300 ? 100 : 25;
+    for (let T = Math.ceil(s.T[0] / step) * step; T <= s.T[1]; T += step) { const x = X(k, U(T)); g.strokeStyle = 'rgba(37,44,55,.9)'; g.beginPath(); g.moveTo(x, k.y); g.lineTo(x, k.y + k.h); g.stroke(); }
+  }
+  // 1 atm guide
+  const y1 = Yv(k, V(1));
+  line([[k.x, y1], [k.x + k.w, y1]], 'rgba(169,193,255,.45)', 1, [4, 5]);
+  // critical isotherm/isobar (dashed edges of the supercritical region)
+  line([[X(k, ucr), Yv(k, vcr)], [X(k, ucr), k.y]], 'rgba(199,146,234,.5)', 1.2, [3, 4]);
+  line([[X(k, ucr), Yv(k, vcr)], [k.x + k.w, Yv(k, vcr)]], 'rgba(199,146,234,.5)', 1.2, [3, 4]);
+  // boundary curves
+  line(subC, '#E3E6EB'); line(vapC, '#E3E6EB'); line(fusC, '#E3E6EB');
+  // region labels
+  const lab = (t, u, v, c) => txt(t, X(k, u), Yv(k, v), c, 15, 700);
+  lab('SOLID', Math.max(0.08, Math.min(ut, uFus(0.85)) * 0.5), 0.8, PH.solid.c);
+  lab('LIQUID', (Math.max(uFus(0.85), ut) + ucr) / 2 + 0.02, 0.86, PH.liquid.c);
+  lab('GAS', (ut + 1) / 2 + 0.08, Math.max(0.08, vt * 0.4), PH.gas.c);
+  g.font = '700 13px "IBM Plex Sans",sans-serif';
+  txt('SUPERCRITICAL', X(k, (ucr + 1) / 2), Yv(k, (vcr + 1) / 2) - 8, PH.sc.c, 12.5, 700); txt('FLUID', X(k, (ucr + 1) / 2), Yv(k, (vcr + 1) / 2) + 8, PH.sc.c, 12.5, 700);
+
+  // process path
+  if (proc) {
+    const pts = proc.p.pts.map(([T, P]) => [X(k, U(T)), Yv(k, V(P))]);
+    line(pts, 'rgba(255,210,122,.35)', 3, [6, 6]);
+    const done = proc.trail; if (done.length > 1) line(done.map(([u, v]) => [X(k, u), Yv(k, v)]), '#FFD27A', 3);
+  }
+  g.restore();
+
+  // key points
+  const dot = (u, v, col, r = 5) => { g.beginPath(); g.arc(X(k, u), Yv(k, v), r, 0, 7); g.fillStyle = col; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 1.5; g.stroke(); };
+  const guide = (u, v) => { line([[X(k, u), Yv(k, v)], [X(k, u), k.y + k.h]], 'rgba(138,147,161,.45)', 1, [2, 4]); line([[k.x, Yv(k, v)], [X(k, u), Yv(k, v)]], 'rgba(138,147,161,.45)', 1, [2, 4]); };
+  guide(ut, vt); guide(ucr, vcr);
+  const pts1 = [];   // the normal transitions at 1 atm
+  if (S.s === 'h2o') {
+    const um = uFus(V(1)), ub = U(s.nbp); guide(um, V(1)); guide(ub, V(1));
+    pts1.push([um, '0 °C', 'normal m.p.'], [ub, '100 °C', 'normal b.p.']);
+  } else { const us = U(s.nsp); guide(us, V(1)); pts1.push([us, '−78.5 °C', 'sublimes at 1 atm']); }
+  for (const [u, t, n] of pts1) { dot(u, V(1), '#A9C1FF', 4); txt(n, X(k, u) + 6, Yv(k, V(1)) + 12, '#A9C1FF', 11, 500, 'left'); }
+  dot(ut, vt, '#FFD27A', 6); dot(ucr, vcr, '#FF8A80', 6);
+  txt('triple point', X(k, ut) + 9, Yv(k, vt) + (S.s === 'h2o' ? 14 : -14), '#FFD27A', 12, 600, 'left');
+  txt('critical point', X(k, ucr) - 8, Yv(k, vcr) - 14, '#FF8A80', 12, 600, 'right');
+
+  // axes
+  g.strokeStyle = '#8A93A1'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(k.x, k.y); g.lineTo(k.x, k.y + k.h); g.lineTo(k.x + k.w, k.y + k.h); g.stroke();
+  txt('Temperature →', k.x + k.w / 2, k.y + k.h + 42, '#8A93A1', 12.5, 500);
+  g.save(); g.translate(k.x - 56, k.y + k.h / 2); g.rotate(-Math.PI / 2); txt('Pressure →', 0, 0, '#8A93A1', 12.5, 500); g.restore();
+  if (S.axes === 'log') {
+    for (let e = Math.ceil(Math.log10(s.P[0])); e <= Math.floor(Math.log10(s.P[1])); e++) txt(e === 0 ? '1 atm' : `10${sup(e)}`, k.x - 8, Yv(k, V(10 ** e)), '#8A93A1', 11, 500, 'right');
+    const step = s.T[1] - s.T[0] > 300 ? 100 : 25;
+    for (let T = Math.ceil(s.T[0] / step) * step; T <= s.T[1]; T += step) txt(`${Math.round(T - 273.15)} °C`, X(k, U(T)), k.y + k.h + 16, '#8A93A1', 11, 500);
+  } else {
+    // textbook style: only the key values, at the guide lines
+    const tk = [[ut, cel(s.tp[0])], [ucr, cel(s.cp[0])], ...pts1.map(([u, t]) => [u, t])];
+    tk.sort((a, b) => a[0] - b[0]);
+    let lastX = -99;
+    for (const [u, t] of tk) { const x = X(k, u); if (x - lastX < 46) continue; txt(t, x, k.y + k.h + 16, '#8A93A1', 11, 500); lastX = x; }
+    for (const [v, t] of [[vt, fmtP(s.tp[1])], [V(1), '1 atm'], [vcr, fmtP(s.cp[1])]]) txt(t, k.x - 8, Yv(k, v), '#8A93A1', 11, 500, 'right');
+    txt('Sketch — not to scale', k.x + k.w, k.y + k.h + 42, '#5b6577', 11, 500, 'right');
+  }
+
+  // the point
+  const px = X(k, pu), py = Yv(k, pv), ph = phaseAt(pu, pv);
+  g.beginPath(); g.arc(px, py, 11, 0, 7); g.fillStyle = alpha(PH[ph].c, 0.25); g.fill();
+  g.beginPath(); g.arc(px, py, 6.5, 0, 7); g.fillStyle = PH[ph].c; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 2; g.stroke();
+}
+const sup = e => String(e).split('').map(c => '⁻⁰¹²³⁴⁵⁶⁷⁸⁹'[c === '-' ? 0 : +c + 1]).join('');
+
+/* ---------- molecular picture ---------- */
+const NP = 40, parts = [];
+for (let i = 0; i < NP; i++) parts.push({x: Math.random(), y: Math.random(), vx: 0, vy: 0, role: 'gas'});
+let mix = {};   // role → fraction
+function rolesFor(ph, line) {
+  if (line === 'tp') return {solid: 0.4, liquid: 0.4, gas: 0.2};
+  if (line === 'fus') return {solid: 0.5, liquid: 0.5};
+  if (line === 'vap') return {liquid: 0.7, gas: 0.3};
+  if (line === 'sub') return {solid: 0.75, gas: 0.25};
+  return {[ph]: 1};
+}
+function assignRoles(m) {
+  const order = ['solid', 'liquid', 'gas', 'sc'];
+  let idx = 0;
+  // keep existing roles where possible, by sorting particles by height (low ones stay condensed)
+  const sorted = [...parts].sort((a, b) => b.y - a.y);
+  for (const r of order) { const n = Math.round((m[r] || 0) * NP); for (let i = 0; i < n && idx < NP; i++) sorted[idx++].role = r; }
+  while (idx < NP) sorted[idx++].role = order.find(r => m[r]) || 'gas';
+}
+function molStep(dt, Tn) {
+  const m = $('#pMol'), w = m.width / dpr, h = m.height / dpr, rad = 4.2, d0 = 11.5;
+  const speed = 0.5 + 0.8 * Math.sqrt(Math.max(0.2, Tn));
+  const solids = parts.filter(p => p.role === 'solid');
+  // solid lattice in the bottom-left corner
+  const cols = Math.max(3, Math.min(10, Math.ceil(Math.sqrt(solids.length * 1.6))));
+  solids.forEach((p, i) => { p.tx = (rad + 3 + (i % cols) * d0 + (Math.floor(i / cols) % 2) * d0 / 2) / w; p.ty = 1 - (rad + 3 + Math.floor(i / cols) * d0 * 0.9) / h; });
+  for (const p of parts) {
+    if (p.role === 'solid') {
+      const amp = 0.6 + 1.2 * Math.min(1.5, Tn);
+      p.x += (p.tx - p.x) * Math.min(1, dt * 10) + (Math.random() - 0.5) * amp / w;
+      p.y += (p.ty - p.y) * Math.min(1, dt * 10) + (Math.random() - 0.5) * amp / h;
+      p.vx = p.vy = 0;
+    } else if (p.role === 'liquid') {
+      p.vy += 420 * dt / h;   // settles to the bottom
+      p.vx += (Math.random() - 0.5) * 120 * dt / w * speed; p.vy += (Math.random() - 0.5) * 120 * dt / h * speed;
+      p.vx *= 0.9; p.vy *= 0.9;
+    } else {
+      const v = (p.role === 'sc' ? 70 : 110) * speed;
+      const s = Math.hypot(p.vx * w, p.vy * h);
+      if (s < 1e-3) { const a = Math.random() * 7; p.vx = Math.cos(a) * v / w; p.vy = Math.sin(a) * v / h; }
+      else { p.vx *= (v / s) ** 0.1; p.vy *= (v / s) ** 0.1; }
+      if (p.role === 'sc') { p.vx += (Math.random() - 0.5) * 80 * dt / w; p.vy += (Math.random() - 0.5) * 80 * dt / h; }
+    }
+  }
+  // soft repulsion so condensed particles do not overlap
+  for (let i = 0; i < NP; i++) for (let j = i + 1; j < NP; j++) {
+    const a = parts[i], b = parts[j]; if (a.role === 'solid' && b.role === 'solid') continue;
+    if (a.role === 'gas' && b.role === 'gas') continue;
+    const dx = (b.x - a.x) * w, dy = (b.y - a.y) * h, d = Math.hypot(dx, dy);
+    if (d < d0 * 0.95 && d > 1e-3) {
+      const push = (d0 * 0.95 - d) * 0.5, ux = dx / d, uy = dy / d;
+      if (a.role !== 'solid') { a.x -= ux * push / w; a.y -= uy * push / h; }
+      if (b.role !== 'solid') { b.x += ux * push / w; b.y += uy * push / h; }
+    }
+  }
+  for (const p of parts) {
+    if (p.role !== 'solid') { p.x += p.vx * dt; p.y += p.vy * dt; }
+    const mx = rad / w, my = rad / h;
+    if (p.x < mx) { p.x = mx; p.vx = Math.abs(p.vx); } if (p.x > 1 - mx) { p.x = 1 - mx; p.vx = -Math.abs(p.vx); }
+    if (p.y < my) { p.y = my; p.vy = Math.abs(p.vy); } if (p.y > 1 - my) { p.y = 1 - my; p.vy = -Math.abs(p.vy) * (p.role === 'liquid' ? 0.2 : 1); }
+  }
+}
+function molDraw() {
+  const m = $('#pMol'), c = m.getContext('2d'), w = m.width / dpr, h = m.height / dpr;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  for (const p of parts) {
+    c.beginPath(); c.arc(p.x * w, p.y * h, 4.2, 0, 7);
+    c.fillStyle = PH[p.role === 'sc' ? 'sc' : p.role].c; c.fill();
+  }
+}
+
+/* ---------- processes ---------- */
+function startProc(i) {
+  const p = sub().procs[i];
+  // sample the path in plot space, evenly by on-screen length
+  proc = {p, i, s: 0, trail: [], prev: null};
+  logs = [];
+  playing = true;
+  renderPanel();
+}
+function procPoint(p, s) {
+  // piecewise in (T, ln P); segments weighted by their plot-space length
+  const segs = [];
+  let tot = 0;
+  for (let i = 1; i < p.pts.length; i++) {
+    const a = p.pts[i - 1], b = p.pts[i];
+    const L = Math.hypot(U(b[0]) - U(a[0]), V(b[1]) - V(a[1]));
+    segs.push([a, b, L]); tot += L;
+  }
+  let x = s * tot;
+  for (const [a, b, L] of segs) {
+    if (x <= L || segs[segs.length - 1][0] === a) { const f = Math.min(1, x / L); return [a[0] + (b[0] - a[0]) * f, Math.exp(ln(a[1]) + (ln(b[1]) - ln(a[1])) * f)]; }
+    x -= L;
+  }
+}
+function stepProc(dt) {
+  if (!proc || proc.s >= 1) return;
+  const before = phaseAt(pu, pv);
+  proc.s = Math.min(1, proc.s + dt / 9);
+  const [T, P] = procPoint(proc.p, proc.s);
+  pu = U(T); pv = V(P);
+  proc.trail.push([pu, pv]);
+  const after = phaseAt(pu, pv);
+  if (after !== before && proc.trail.length > 1) {
+    const what = CHANGE[`${before}>${after}`] || `${PH[before].n} → ${PH[after].n}`;
+    logs.push(S.axes === 'log' ? `${what} at ${fmtT(T)}, ${fmtP(P)}` : `${what}`);
+    renderLog();
+  }
+  if (proc.s >= 1) { renderPanel(); }
+}
+
+/* ---------- panel ---------- */
+function renderLog() {
+  $('#pNote').innerHTML = proc ? proc.p.note : '';
+  $('#pLog').innerHTML = proc ? logs.map(l => `<li>${l.charAt(0).toUpperCase() + l.slice(1)}</li>`).join('') : '';
+}
+function renderPanel() {
+  const s = sub();
+  document.querySelectorAll('#pSub2 button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === S.s)));
+  document.querySelectorAll('#pAxes button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.a === S.axes)));
+  $('#pTitle').innerHTML = `${s.name} <span class="ifm">${s.f}</span>`;
+  $('#pProc').innerHTML = s.procs.map((p, i) => `<button type="button" data-i="${i}" aria-pressed="${proc && proc.i === i}">${p.name}</button>`).join('');
+  $('#pPlay').textContent = proc && proc.s < 1 ? (playing ? 'Pause' : 'Play') : 'Clear';
+  $('#pPlay').hidden = !proc;
+  const k = [];
+  k.push(['Triple point', `${cel(s.tp[0])}, ${fmtP(s.tp[1])}<small>the only T and P where solid, liquid and gas coexist</small>`]);
+  k.push(['Critical point', `${cel(s.cp[0])}, ${fmtP(s.cp[1])}<small>above this the liquid–gas boundary disappears</small>`]);
+  if (S.s === 'h2o') { k.push(['Normal melting point', '0 °C at 1 atm']); k.push(['Normal boiling point', '100 °C at 1 atm']); }
+  else k.push(['At 1 atm', `sublimes at ${cel(s.nsp)}<small>1 atm is below the triple-point pressure, so liquid CO₂ cannot exist</small>`]);
+  k.push(['Melting line slope', S.s === 'h2o' ? `negative (≈ ${s.fusSlope} atm/K)<small>ice is less dense than liquid water, so pressure favours the liquid</small>` : `positive (≈ +${s.fusSlope} atm/K)<small>the solid is denser than the liquid, as for most substances</small>`]);
+  $('#pKeys').innerHTML = k.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  $('#pHow').innerHTML = S.s === 'h2o'
+    ? '<b>How to read it.</b> Each region is the one stable phase at that temperature and pressure. The lines are equilibria: on a line two phases coexist, and crossing it is a phase change. Water is unusual: its melting line leans left, so squeezing ice can melt it. Above the critical point liquid and gas become one supercritical fluid.'
+    : '<b>How to read it.</b> Each region is the one stable phase at that temperature and pressure; the lines are where two phases coexist. CO₂ is typical in having a melting line that leans right (the solid is denser). Its triple point is above 1 atm, which is why dry ice never melts in air. Supercritical CO₂ (above 31 °C and 73 atm) is used to decaffeinate coffee.';
+  renderLog(); renderPoint();
+}
+function renderPoint() {
+  const k = box(), ph = phaseAt(pu, pv), ln_ = nearLine(pu, pv, k);
+  const show = ln_ || ph;
+  phaseNow = show;
+  $('#pPhase').textContent = ln_ ? LINE[ln_] : PH[ph].n;
+  $('#pPhase').style.color = ln_ ? '#FFD27A' : PH[ph].c;
+  $('#pSub').innerHTML = S.axes === 'log' ? `<b>${fmtT(Tof(pu))}</b> · <b>${fmtP(Pof(pv))}</b>` : `Drag the point · switch to <b>To scale</b> for values`;
+  const rows = [['Phase', ln_ ? LINE[ln_] : PH[ph].n]];
+  if (S.axes === 'log') { rows.push(['Temperature', fmtT(Tof(pu))]); rows.push(['Pressure', `${fmtP(Pof(pv))}<small>${(Pof(pv) * 101.325).toPrecision(3)} kPa · ${(Pof(pv) * 760).toPrecision(3)} mmHg</small>`]); }
+  const desc = {solid: 'Particles locked in place, vibrating about fixed positions.', liquid: 'Particles touching but free to slide past each other.', gas: 'Particles far apart, moving fast in straight lines.', sc: 'As dense as a liquid but fills its container like a gas; no surface.'};
+  rows.push(['Particles', ln_ ? 'Two phases in equilibrium: particles leave and join each phase at the same rate.' : desc[ph]]);
+  $('#pRead').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  const key = JSON.stringify(rolesFor(ph, ln_));
+  if (key !== mix.key) { mix = {key}; assignRoles(rolesFor(ph, ln_)); }
+}
+
+/* ---------- loop & events ---------- */
+let panelT = 0;
+function frame(now) {
+  raf = 0;
+  if ($('#pApp').hidden) return;
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now;
+  if (playing && proc) stepProc(dt);
+  const s = sub(), T = Tof(pu);
+  molStep(dt, (T - s.T[0]) / (s.tp[0] - s.T[0] + 1e-9) * 0.5);
+  draw(); molDraw();
+  if ((panelT += dt) > 0.1) { panelT = 0; renderPoint(); }
+  raf = requestAnimationFrame(frame);
+}
+function setFromEvent(e) {
+  const r = cv.getBoundingClientRect(), k = box();
+  pu = Math.min(1, Math.max(0, (e.clientX - r.left - k.x) / k.w));
+  pv = Math.min(1, Math.max(0, 1 - (e.clientY - r.top - k.y) / k.h));
+  S.pt[S.s] = [Tof(pu), Pof(pv)]; save();
+  renderPoint(); draw();
+}
+function setSub(id) { S.s = id; proc = null; logs = []; const [T, P] = S.pt[id]; pu = U(T); pv = V(P); save(); renderPanel(); draw(); }
+function bind() {
+  cv = $('#pCanvas'); g = cv.getContext('2d');
+  cv.addEventListener('pointerdown', e => {
+    const r = cv.getBoundingClientRect(), k = box();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    if (x < k.x - 10 || x > k.x + k.w + 10 || y < k.y - 10 || y > k.y + k.h + 10) return;
+    drag = true; proc = null; logs = []; renderPanel(); cv.setPointerCapture(e.pointerId); setFromEvent(e); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => { if (drag) setFromEvent(e); });
+  const end = () => { drag = false; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  $('#pSub2').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSub(b.dataset.s); });
+  $('#pAxes').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const T = Tof(pu), P = Pof(pv);
+    S.axes = b.dataset.a; save();
+    if (proc) { proc.trail = []; const [t2, p2] = procPoint(proc.p, proc.s); pu = U(t2); pv = V(p2); }
+    else { pu = Math.min(1, Math.max(0, U(T))); pv = Math.min(1, Math.max(0, V(P))); }
+    renderPanel(); draw();
+  });
+  $('#pProc').addEventListener('click', e => { const b = e.target.closest('button'); if (b) startProc(+b.dataset.i); });
+  $('#pPlay').addEventListener('click', () => { if (proc && proc.s < 1) playing = !playing; else { proc = null; logs = []; } renderPanel(); });
+  // keyboard: arrows move the point
+  cv.tabIndex = 0;
+  cv.addEventListener('keydown', e => {
+    const d = e.shiftKey ? 0.05 : 0.01;
+    if (e.key === 'ArrowLeft') pu = Math.max(0, pu - d); else if (e.key === 'ArrowRight') pu = Math.min(1, pu + d);
+    else if (e.key === 'ArrowUp') pv = Math.min(1, pv + d); else if (e.key === 'ArrowDown') pv = Math.max(0, pv - d); else return;
+    e.preventDefault(); proc = null; S.pt[S.s] = [Tof(pu), Pof(pv)]; save(); renderPanel(); draw();
+  });
+  new ResizeObserver(resize).observe($('#pViewer'));
+  new ResizeObserver(resize).observe($('#pMol'));
+}
+window.initPhase = function () {
+  if (!inited) { inited = true; bind(); const [T, P] = S.pt[S.s]; pu = Math.min(1, Math.max(0, U(T))); pv = Math.min(1, Math.max(0, V(P))); renderPanel(); }
+  resize();
+  if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+};
+})();
+</script>
 <script>
 /* ---------- site map + router ----------
    One registry drives the header nav, the home page and routing.
@@ -7938,10 +8420,13 @@ window.initCells = function () {
        desc: 'Watch London dispersion, dipole–dipole attraction and hydrogen bonding up close, then simulate many molecules to see which substances condense at a given temperature.',
        tags: ['Induced dipoles', 'Polar molecules', 'H-bonds & boiling points']}
     ]},
-    {name: 'Solids', blurb: 'How particles pack in a crystal', pages: [
+    {name: 'Solids', blurb: 'How particles pack in a crystal, and when matter changes phase', pages: [
       {id: 'cells', app: '#uApp', nav: 'Unit cells', title: 'Unit Cells', init: () => window.initCells(),
        desc: 'Simple, body-centred and face-centred cubic cells plus NaCl, CsCl and zinc blende in 3D: count the atoms per cell, see where atoms touch, find the coordination number and work out the density.',
-       tags: ['SC · BCC · FCC', 'Atoms per cell', 'Density from a']}
+       tags: ['SC · BCC · FCC', 'Atoms per cell', 'Density from a']},
+      {id: 'phase', app: '#pApp', nav: 'Phase diagrams', title: 'Phase Diagram', init: () => window.initPhase(),
+       desc: 'Pressure–temperature phase diagrams of water and CO₂: drag a point to see which phase is stable, and follow heating, compression and sublimation paths across the lines.',
+       tags: ['Triple point', 'Critical point', 'Supercritical fluid']}
     ]},
     {name: 'Thermochemistry', blurb: 'Measuring the heat of a reaction', pages: [
       {id: 'calorimeter', app: '#cApp', nav: 'Bomb calorimeter', title: 'Bomb Calorimeter', init: () => window.initCalorimeter(),
