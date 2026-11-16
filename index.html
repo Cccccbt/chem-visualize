@@ -6861,7 +6861,7 @@ if (S.view !== 'many') S.view = 'pair';
 if (!['slow', 'normal', 'fast'].includes(S.speed)) S.speed = 'normal';
 S.T = Math.min(600, Math.max(2, +S.T || 298)); S.sep = Math.min(2.5, Math.max(1, +S.sep || 1.15));
 const save = () => ls.set('aov.imf', JSON.stringify(S));
-const SPEED = {slow: 0.2, normal: 0.45, fast: 1};
+const SPEED = {slow: 0.07, normal: 0.45, fast: 1};
 const sub = () => SUB[S.sub[S.mode]];
 
 // temperature slider is logarithmic: 2 K … 600 K
