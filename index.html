@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head>
-<meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta charset="utf-8">
+<meta name="version" content="1.71"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Chem Visualize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -212,6 +213,10 @@ input[type=color]::-moz-color-swatch{border:none;border-radius:5px}
 .site{flex:none;display:flex;align-items:stretch;gap:20px;height:46px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:30}
 .site-brand{flex:none;display:flex;align-items:center;gap:8px;color:var(--fg);text-decoration:none;font:700 15px/1 var(--f-display);font-stretch:88%;letter-spacing:.03em}
 .site-brand svg{width:20px;height:20px;color:var(--accent);flex:none}
+.site-ver{flex:none;align-self:center;margin:0 6px 0 -4px;font:500 11px/1 var(--f-mono);color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 7px}
+.site-ver:hover{color:var(--accent);border-color:var(--accent)}
+.home-ver{margin:40px 0 0;font:500 12px var(--f-mono);color:var(--muted)}
+.home-ver a{color:inherit}
 .site-nav{display:flex;align-items:stretch;gap:2px;min-width:0;padding-left:12px;border-left:1px solid var(--line)}
 /* one dropdown per topic; on phones a single menu with everything */
 .nav-dd{position:relative;display:flex}
@@ -697,6 +702,7 @@ body.side-off .app > .panel{display:none}
 
 <header class="site">
   <a class="site-brand" href="#home"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><ellipse cx="10" cy="10" rx="8.5" ry="3.4"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(60 10 10)"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(120 10 10)"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg><span>Chem Visualize</span></a>
+  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.71 · updated 2026-11-16 · see the change history">v1.71</a>
   <nav class="site-nav" id="siteNav" aria-label="Tools"></nav>
 </header>
 
@@ -707,6 +713,7 @@ body.side-off .app > .panel{display:none}
       <p>Interactive chemistry models that run in the browser. Pick a tool to start.</p>
     </header>
     <div id="homeTopics"></div>
+    <p class="home-ver">Version 1.71 · updated 2026-11-16 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
   </div>
 </main>
 
