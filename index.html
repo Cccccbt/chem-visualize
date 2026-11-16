@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8">
-<meta name="version" content="1.71"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="version" content="1.72"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Chem Visualize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -702,7 +702,7 @@ body.side-off .app > .panel{display:none}
 
 <header class="site">
   <a class="site-brand" href="#home"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><ellipse cx="10" cy="10" rx="8.5" ry="3.4"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(60 10 10)"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(120 10 10)"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg><span>Chem Visualize</span></a>
-  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.71 · updated 2026-11-16 · see the change history">v1.71</a>
+  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.72 · updated 2026-11-16 · see the change history">v1.72</a>
   <nav class="site-nav" id="siteNav" aria-label="Tools"></nav>
 </header>
 
@@ -713,7 +713,7 @@ body.side-off .app > .panel{display:none}
       <p>Interactive chemistry models that run in the browser. Pick a tool to start.</p>
     </header>
     <div id="homeTopics"></div>
-    <p class="home-ver">Version 1.71 · updated 2026-11-16 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
+    <p class="home-ver">Version 1.72 · updated 2026-11-16 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
   </div>
 </main>
 
@@ -6932,8 +6932,17 @@ window.IMFCore = (function () {
         if (m.x < pad) { m.x = pad; m.vx = Math.abs(m.vx); } else if (m.x > L - pad) { m.x = L - pad; m.vx = -Math.abs(m.vx); }
         if (m.y < pad) { m.y = pad; m.vy = Math.abs(m.vy); } else if (m.y > L - pad) { m.y = L - pad; m.vy = -Math.abs(m.vy); }
       }
+      // a molecule held by the pointer moves toward it in small steps (so it pushes others rather than jumping into them)
+      const pin = sim.pin, pm = pin && mol[pin.i];
+      if (pm) {
+        const pad = r0 * 0.5, tx = Math.min(L - pad, Math.max(pad, pin.x)), ty = Math.min(L - pad, Math.max(pad, pin.y));
+        const dx = tx - pm.x, dy = ty - pm.y, d = Math.hypot(dx, dy), st = Math.min(d, 0.03 * r0);
+        if (d > 1e-9) { pm.x += dx / d * st; pm.y += dy / d * st; }
+        pm.vx = pm.vy = 0;
+      }
       sim.pe = forces();
       for (const m of mol) { m.vx += 0.5 * dt * m.fx / M; m.vy += 0.5 * dt * m.fy / M; m.w += 0.5 * dt * m.tq / I; }
+      if (pm) pm.vx = pm.vy = 0;
     };
     const SPT = Math.round(160 * Math.sqrt(Math.max(1, kf)));   // steps per t0: stiffer when attractions were boosted
     sim.dt = t0 / SPT;
@@ -7139,7 +7148,7 @@ function deltaLabels(P, k, ox, oy, scaleOut = 0.3) {
 }
 
 /* ===================== close-up views ===================== */
-const PT = {t: 0, hist: [], sum: 0, n: 0, dA: [0, 0], dB: [0, 0], nB: [0, 0], ta: 0.5, tb: 2.4, drag: null, U: 0};
+const PT = {off: [0, 0], t: 0, hist: [], sum: 0, n: 0, dA: [0, 0], dB: [0, 0], nB: [0, 0], ta: 0.5, tb: 2.4, drag: null, U: 0};
 const HIST = 9;   // seconds of trace
 function gauss() { let u = 0; while (u === 0) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); }
 
@@ -7193,7 +7202,7 @@ function pairStep(dt) {
   PT.hist.push([PT.t, PT.U]); PT.sum += PT.U; PT.n++;
   while (PT.hist.length && PT.hist[0][0] < PT.t - HIST) PT.hist.shift();
 }
-function pairReset() { PT.hist = []; PT.sum = 0; PT.n = 0; PT.t = 0; PT.dA = [0, 0]; PT.dB = [0, 0]; PT.nB = [0, 0]; PT.ta = 0.5; PT.tb = 2.4; PT.drag = null; }
+function pairReset() { PT.off = [0, 0]; PT.hist = []; PT.sum = 0; PT.n = 0; PT.t = 0; PT.dA = [0, 0]; PT.dB = [0, 0]; PT.nB = [0, 0]; PT.ta = 0.5; PT.tb = 2.4; PT.drag = null; }
 
 // layout: world → screen; keeps the scale fixed for the whole distance range so the slider visibly moves things
 function pairLayout() {
@@ -7289,7 +7298,7 @@ function drawPairDisp(L) {
   const capY = cy + ry * k + 30;
   const narrow = xb - xa < 170;
   txt(narrow ? 'Temporary' : 'Instantaneous dipole', xa, capY, '#8A93A1', 12.5); txt(narrow ? 'Induced' : 'Induced dipole', xb, capY, '#8A93A1', 12.5);
-  txt(`r = ${r.toFixed(2)} Å`, cx, cy - ry * k - 20, '#8A93A1', 12, 500);
+  txt(`r = ${r.toFixed(2)} Å · drag either atom to change it`, cx, cy - ry * k - 20, '#8A93A1', 12, 500);
 }
 
 function dipoleArrow(P, s, k, ox, oy) {
@@ -7332,6 +7341,24 @@ function drawPairDip(L) {
   else if (s.mu < 0.3) txt('Very small dipole: dipole–dipole attraction is almost nothing', cx, capY + 20, '#FFD27A', 12.5);
 }
 
+// how much of a hydrogen bond survives: full at its normal length and a straight X–H···A line,
+// gone beyond about 3 Å or when bent more than about 70° away from straight
+function hbStrength(hb, XD, H1, XA) {
+  if (!hb || !H1) return {d: 0, f: 0, cos: 0};
+  const ax = H1.X - XD.X, ay = H1.Y - XD.Y, bx = XA.X - H1.X, by = XA.Y - H1.Y, d = Math.hypot(bx, by);
+  const cos = (ax * bx + ay * by) / (Math.hypot(ax, ay) * d);
+  const cl = v => Math.max(0, Math.min(1, v));
+  return {d, cos, f: cl((3.0 - d) / (3.0 - hb.hb)) * cl((cos - 0.34) / (0.87 - 0.34))};
+}
+function hbLine(H1, XA, k, cx, cy, f, col = '#FFD27A') {
+  const ux = XA.X - H1.X, uy = XA.Y - H1.Y, d = Math.hypot(ux, uy);
+  const a = H1.r + 0.06, b = XA.r + 0.06;
+  if (d <= a + b) return;
+  const pulse = calm ? 1 : 0.75 + 0.25 * Math.sin(PT.t * 4);
+  g.globalAlpha = pulse * (0.15 + 0.85 * f);
+  dash(cx + (H1.X + ux / d * a) * k, cy + (H1.Y + uy / d * a) * k, cx + (XA.X - ux / d * b) * k, cy + (XA.Y - uy / d * b) * k, col, 1.2 + 1.8 * f, [6, 5]);
+  g.globalAlpha = 1;
+}
 function drawPairHB(L) {
   const s = sub(), {k, cx, cy} = L, hb = s.hb;
   const hS = s.site.find(a => a.t === 'H');
@@ -7347,18 +7374,17 @@ function drawPairHB(L) {
   // molecules are placed by their first (heavy) atom
   const offD = rotPt(s0.x, s0.y, rotD), offA = rotPt(s0.x, s0.y, rotA);
   const PD = drawMol(s, x0 - offD[0], -offD[1], rotD, k, cx, cy, {labels: true, lp: true, bs: true});
-  const PA = drawMol(s, x0 + dX - offA[0], -offA[1], rotA, k, cx, cy, {labels: true, lp: true, bs: true});
+  const PA = drawMol(s, x0 + dX - offA[0] + PT.off[0], -offA[1] + PT.off[1], rotA, k, cx, cy, {labels: true, lp: true, bs: true});
   if (S.charge) { deltaLabels(PD, k, cx, cy, 0.05); deltaLabels(PA, k, cx, cy, 0.05); }
   const H1 = PD.find(a => a.t === 'H'), XD = PD[0], XA = PA[0];
   const hx = cx + (H1 ? H1.X : XD.X + xh) * k, hy = cy + (H1 ? H1.Y : 0) * k;
   const ax = cx + XA.X * k, ay = cy + XA.Y * k;
-  const ok = !!hb;
-  const hr = 0.27 * k, tgtX = ax - XA.r * k;
-  if (S.lines) {
-    if (ok) {
-      const pulse = calm ? 1 : 0.75 + 0.25 * Math.sin(PT.t * 4);
-      g.globalAlpha = pulse; dash(hx + hr + 3, hy, tgtX - 3, ay, '#FFD27A', 3, [6, 5]); g.globalAlpha = 1;
-    } else if (s.id === 'H2S') dash(hx + hr + 3, hy, tgtX - 3, ay, 'rgba(138,147,161,.6)', 1.5, [3, 5]);
+  const ok = !!hb, moved = Math.hypot(PT.off[0], PT.off[1]) > 0.04;
+  const st = hbStrength(hb, XD, H1, XA);
+  PT.hbf = st.f;
+  if (S.lines && H1) {
+    if (ok) hbLine(H1, XA, k, cx, cy, st.f);
+    else if (s.id === 'H2S') hbLine(H1, XA, k, cx, cy, 0.3, 'rgba(138,147,161,.9)');
   }
   const xD = cx + XD.X * k;
   const bracket = (x1, x2, y, c, up) => { const d = up ? 6 : -6; g.strokeStyle = c; g.lineWidth = 1; g.beginPath(); g.moveTo(x1, y + d); g.lineTo(x1, y); g.lineTo(x2, y); g.lineTo(x2, y + d); g.stroke(); };
@@ -7368,12 +7394,21 @@ function drawPairHB(L) {
     bracket(xD, hx, yb, '#5b6577', false);
     txt(`${hb.cov_name} ${hb.xh.toFixed(2)} Å`, (xD + hx) / 2, yb + 16, '#E3E6EB', 13, 600, 'center');
     txt(`covalent · ${hb.cov} kJ/mol`, (xD + hx) / 2, yb + 34, '#8A93A1', 12);
-    bracket(hx, ax, ya, '#7a6a45', true);
-    txt(`H···${XA.t} ${(hb.hb + wob).toFixed(2)} Å`, (hx + ax) / 2, ya - 32, '#FFD27A', 13, 600);
-    txt(`hydrogen bond · ≈${hb.e} kJ/mol`, (hx + ax) / 2, ya - 14, '#8A93A1', 12);
+    if (!moved) {
+      bracket(hx, ax, ya, '#7a6a45', true);
+      txt(`H···${XA.t} ${(hb.hb + wob).toFixed(2)} Å`, (hx + ax) / 2, ya - 32, '#FFD27A', 13, 600);
+      txt(`hydrogen bond · ≈${hb.e} kJ/mol`, (hx + ax) / 2, ya - 14, '#8A93A1', 12);
+    } else {
+      // after a drag: label the actual distance and angle on the line
+      const mx = (hx + ax) / 2, my = Math.min(hy, ay) - 0.95 * k - 22;
+      const ang = Math.acos(Math.max(-1, Math.min(1, st.cos))) / C.deg;
+      txt(`H···${XA.t} ${st.d.toFixed(2)} Å · bent ${Math.round(ang)}°`, mx, my - 18, st.f > 0.05 ? '#FFD27A' : '#8A93A1', 13, 600);
+      txt(st.f > 0.6 ? `hydrogen bond · ≈${Math.round(hb.e * st.f)} kJ/mol` : st.f > 0.05 ? `weakened hydrogen bond · ≈${Math.round(hb.e * st.f)} kJ/mol` : (st.d > 2.9 ? 'too far apart: hydrogen bond broken' : 'too bent: H no longer points at the lone pair'), mx, my, '#8A93A1', 12);
+    }
     const yl = Math.max(cy + 2.15 * k, yb + 58);
     txt('Donor', xD, yl, '#8A93A1', 12.5);
-    txt('Acceptor', ax, yl, '#8A93A1', 12.5);
+    txt('Acceptor', ax, Math.max(yl, ay + 2.15 * k), '#8A93A1', 12.5);
+    txt(moved ? 'Drag the acceptor back, or switch substance to reset' : 'Drag the acceptor (right) to stretch or bend the hydrogen bond', cx, Math.max(yl, ay + 2.15 * k) + 22, '#5b6577', 12);
   } else {
     const msg = s.id === 'H2S' ? 'S is not electronegative enough: no hydrogen bond, only weak dipole–dipole + dispersion'
       : 'No N–H, O–H or F–H bond and no polar bonds: dispersion only';
@@ -7413,7 +7448,7 @@ function drawPairAll(L) {
   const s = sub(), {k, cx, cy} = L, P = allPlace(s), Ly = S.layers;
   // thermal jiggle fades to a tiny zero-point vibration at 0 K
   const wob = calm || !playing ? 0 : (0.008 + 0.05 * Math.sqrt(Math.min(S.T, 600) / 298)) * Math.sin(PT.t * 2.3);
-  const A = {...P.A, x: P.A.x - wob / 2}, B = {...P.B, x: P.B.x + wob / 2};
+  const A = {...P.A, x: P.A.x - wob / 2}, B = {...P.B, x: P.B.x + wob / 2 + PT.off[0], y: P.B.y + PT.off[1]};
   const has = forcesOf(s);
   // L: electron clouds that flicker; the right one follows the left one
   if (Ly.L) {
@@ -7435,12 +7470,10 @@ function drawPairAll(L) {
   // H: the hydrogen bond from the donor H to the acceptor's lone pair
   if (Ly.H && s.hb) {
     const H1 = PA.find(a => a.t === 'H' && Math.abs(a.Y - PA[0].Y) < 0.05 && a.X > PA[0].X) || PA.find(a => a.t === 'H'), X2 = PB[0];
-    const ux = X2.X - H1.X, uy = X2.Y - H1.Y, d = Math.hypot(ux, uy);
-    const pulse = calm ? 1 : 0.75 + 0.25 * Math.sin(PT.t * 4);
-    g.globalAlpha = pulse;
-    dash(cx + (H1.X + ux / d * (H1.r + 0.06)) * k, cy + (H1.Y + uy / d * (H1.r + 0.06)) * k, cx + (X2.X - ux / d * (X2.r + 0.06)) * k, cy + (X2.Y - uy / d * (X2.r + 0.06)) * k, '#FFD27A', 3, [6, 5]);
-    g.globalAlpha = 1;
-    txt('H', cx + (H1.X + X2.X) / 2 * k, cy + (H1.Y + X2.Y) / 2 * k - 16, '#FFD27A', 13, 700);
+    const st = hbStrength(s.hb, PA[0], H1, X2);
+    PT.hbf = st.f;
+    hbLine(H1, X2, k, cx, cy, st.f);
+    txt(st.f > 0.05 ? 'H' : 'H broken', cx + (H1.X + X2.X) / 2 * k, cy + (H1.Y + X2.Y) / 2 * k - 16, st.f > 0.05 ? '#FFD27A' : '#8A93A1', 13, 700);
   }
   if (Ly.L) txt('L', cx + (A.x + B.x) / 2 * k, cy - (molExt(s)[1] + 0.35) * k, '#A9C1FF', 13, 700);
   // caption: what is shown, and which forces this substance really has
@@ -7455,6 +7488,7 @@ function drawPairAll(L) {
   if (Ly.H && !has.hb) miss.push(s.id === 'H2S' ? 'no H: S is not electronegative enough' : 'no H: needs H bonded to N, O or F');
   if (Ly.H && !Ly.D && has.hb) miss.push('a real H-bonding molecule is also polar, so D is always there too');
   miss.forEach((m, i) => txt(m, cx, y0 + 40 + i * 18, '#FFD27A', 12));
+  txt('Drag the right molecule to pull it away or bend the contact', cx, y0 + 40 + miss.length * 18 + 4, '#5b6577', 12);
 }
 const rotPt = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
 
@@ -7529,6 +7563,8 @@ function manyStep(dt) {
 function drawMany() {
   const s = sub(), {k, ox, oy} = manyLayout();
   g.strokeStyle = '#252C37'; g.lineWidth = 1; g.strokeRect(ox, oy, sim.L * k, sim.L * k);
+  txt(sim.pin ? 'Release to let go — move fast to throw it' : 'Drag a molecule to move or throw it', ox + sim.L * k, oy - 10, '#5b6577', 12, 500, 'right');
+  if (sim.pin) { const m = sim.mol[sim.pin.i]; g.beginPath(); g.arc(ox + m.x * k, oy + m.y * k, (s.ext + 0.4) * k, 0, 7); g.strokeStyle = 'rgba(255,210,122,.8)'; g.lineWidth = 2; g.setLineDash([4, 4]); g.stroke(); g.setLineDash([]); }
   const P = sim.mol.map(m => place(s, m.x, m.y, m.a));
   const bsMany = S.mode === 'hb' || (S.mode === 'all' && S.layers.H && !!s.hb);
   if (bsMany) for (const Q of P) for (const p of Q) p.r = (p.heavy ? 0.42 : 0.27) * 1.3;
@@ -7715,6 +7751,8 @@ function renderLive() {
       const fL = cL / (cL + cD), fD = 1 - fL;
       rows.push(['L vs D', `${Math.round(fL * 100)} % dispersion · ${Math.round(fD * 100)} % dipole–dipole<div class="ishare"><i style="width:${(fL * 100).toFixed(1)}%;background:#A9C1FF">${fL > 0.12 ? 'L' : ''}</i><i style="width:${(fD * 100).toFixed(1)}%;background:#8FB0FF;filter:saturate(2) brightness(.8)">${fD > 0.12 ? 'D' : ''}</i></div><small>share of the van der Waals attraction at ${Math.round(S.T)} K (London vs Keesom); dipole–dipole matters less when hot, most at 0 K where the dipoles stay lined up</small>`]);
       rows.push(['Hydrogen bonds', s.hb ? `yes · ≈ ${s.hb.e} kJ/mol each<small>on top of L and D, and much stronger per contact</small>` : 'none']);
+    } else if (s.hb && Math.hypot(PT.off[0], PT.off[1]) > 0.04) {
+      rows.push(['Hydrogen bond', `≈ ${Math.round(s.hb.e * (PT.hbf || 0))} kJ/mol<small>${Math.round((PT.hbf || 0) * 100)} % of a full one — it needs the right distance and a nearly straight X–H···A line</small>`]);
     } else if (s.hb) {
       rows.push(['Hydrogen bond', `≈ ${s.hb.e} kJ/mol<small>${s.hb.cov_name} covalent bond: ${s.hb.cov} kJ/mol (${Math.round(s.hb.cov / s.hb.e)}× stronger)</small>`]);
     }
@@ -7734,7 +7772,7 @@ function renderLive() {
   } else if (S.mode === 'disp') st = 'Temporary dipole → induced dipole';
   else if (S.mode === 'all') { const f = forcesOf(s); st = ['L', f.dip ? 'D' : null, f.hb ? 'H' : null].filter(Boolean).join(' + '); }
   else if (S.mode === 'dip') st = s.mu < 0.05 ? 'Nonpolar: no dipole–dipole force' : PT.U < -0.01 ? 'Attracting' : PT.U > 0.01 ? 'Repelling' : '—';
-  else st = s.hb ? `${s.hb.cov_name}···${s.site[0].t} hydrogen bond` : 'No hydrogen bond';
+  else st = !s.hb ? 'No hydrogen bond' : Math.hypot(PT.off[0], PT.off[1]) > 0.04 ? ((PT.hbf || 0) > 0.6 ? 'Hydrogen bond holds' : (PT.hbf || 0) > 0.05 ? 'Hydrogen bond weakened' : 'Hydrogen bond broken') : `${s.hb.cov_name}···${s.site[0].t} hydrogen bond`;
   $('#iPhase').textContent = st;
 }
 
@@ -7760,38 +7798,109 @@ function bind() {
   for (const [id, key] of [['#iLL', 'L'], ['#iLD', 'D'], ['#iLH', 'H']]) $(id).addEventListener('change', e => { S.layers[key] = e.target.checked; save(); renderPanel(); draw(); });
   $('#iPlay').addEventListener('click', () => { playing = !playing; renderPanel(); });
   $('#iReset').addEventListener('click', () => { ensureSim(true); draw(); renderLive(); });
-  // drag to turn a molecule in the dipole close-up
+  // dragging: turn (dipole close-up), change the distance (dispersion close-up), move the acceptor
+  // (H-bond and all-together close-ups), or grab a molecule (many molecules)
   let grab = null;
-  cv.addEventListener('pointerdown', e => {
-    if (S.view !== 'pair' || S.mode !== 'dip') return;
-    const s = sub(), L = pairLayout(), r = S.sep * contact(s), rect = cv.getBoundingClientRect();
-    const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
-    for (const [id, mx] of [['A', -r / 2], ['B', r / 2]]) {
-      if (Math.hypot(x - mx, y) < halfLen(s) + 0.4) {
-        grab = {id, mx, a0: Math.atan2(y, x - mx), t0: id === 'A' ? PT.ta : PT.tb};
-        PT.drag = id; cv.setPointerCapture(e.pointerId); e.preventDefault(); draw(); return;
-      }
+  const pairPt = e => { const L = pairLayout(), rect = cv.getBoundingClientRect(); return [(e.clientX - rect.left - L.cx) / L.k, (e.clientY - rect.top - L.cy) / L.k]; };
+  const manyPt = e => { const {k, ox, oy} = manyLayout(), rect = cv.getBoundingClientRect(); return [(e.clientX - rect.left - ox) / k, (e.clientY - rect.top - oy) / k]; };
+  function hit(e) {
+    const s = sub();
+    if (S.view === 'many') {
+      if (!sim) return null;
+      const [x, y] = manyPt(e); let best = -1, bd = Infinity;
+      sim.mol.forEach((m, i) => { const d = Math.hypot(m.x - x, m.y - y); if (d < bd) { bd = d; best = i; } });
+      return bd < s.ext + 0.6 ? {kind: 'many', i: best} : null;
     }
+    const [x, y] = pairPt(e);
+    if (S.mode === 'dip') {
+      const r = S.sep * contact(s);
+      for (const [id, mx] of [['A', -r / 2], ['B', r / 2]]) if (Math.hypot(x - mx, y) < halfLen(s) + 0.4) return {kind: 'turn', id, mx, a0: Math.atan2(y, x - mx), t0: id === 'A' ? PT.ta : PT.tb};
+      return null;
+    }
+    if (S.mode === 'disp') {
+      const r = S.sep * contact(s), R = cloudR(s) + (s.site.length > 1 ? 1 : 0);
+      for (const [id, mx] of [['A', -r / 2], ['B', r / 2]]) if (Math.abs(x - mx) < cloudR(s) + 0.2 && Math.abs(y) < R + 0.4) return {kind: 'sep', id};
+      return null;
+    }
+    // H-bond / all together: the right-hand molecule
+    let bx, by;
+    if (S.mode === 'all') { const P = allPlace(s); bx = P.B.x + PT.off[0]; by = P.B.y + PT.off[1]; }
+    else {
+      const hb = s.hb, hS = s.site.find(a => a.t === 'H');
+      const xh = hb ? hb.xh : hS ? Math.hypot(hS.x - s.site[0].x, hS.y - s.site[0].y) : 1.09;
+      const dX = xh + (hb ? hb.hb : (s.id === 'CH4' ? 4.0 - 1.09 : 4.0 - xh));
+      bx = dX / 2 + PT.off[0]; by = PT.off[1];
+    }
+    if (Math.hypot(x - bx, y - by) < halfLen(s) + 0.5) return {kind: 'move', x0: x, y0: y, off0: [...PT.off]};
+    return null;
+  }
+  // keep the moved molecule from overlapping its partner
+  function okOffset(off) {
+    const s = sub(), keep = PT.off; PT.off = off;
+    let A, B;
+    if (S.mode === 'all') { const P = allPlace(s); A = place(s, P.A.x, P.A.y, P.A.a); B = place(s, P.B.x + off[0], P.B.y + off[1], P.B.a); }
+    else {
+      const hb = s.hb, s0 = s.site[0], h = s.site.find(a => a.t === 'H');
+      const hS = h, xh = hb ? hb.xh : hS ? Math.hypot(hS.x - s0.x, hS.y - s0.y) : 1.09;
+      const dX = xh + (hb ? hb.hb : (s.id === 'CH4' ? 4.0 - 1.09 : 4.0 - xh)), x0 = -dX / 2;
+      const rotD = h ? -Math.atan2(h.y - s0.y, h.x - s0.x) : 0, rotA = Math.PI - (s.lp ? s.lp[0] * C.deg : Math.PI);
+      const oD = rotPt(s0.x, s0.y, rotD), oA = rotPt(s0.x, s0.y, rotA);
+      A = place(s, x0 - oD[0], -oD[1], rotD); B = place(s, x0 + dX - oA[0] + off[0], -oA[1] + off[1], rotA);
+    }
+    PT.off = keep;
+    for (const p of A) for (const q of B) {
+      const d = Math.hypot(p.X - q.X, p.Y - q.Y);
+      if (d < (p.heavy && q.heavy ? 2.4 : p.heavy || q.heavy ? 1.3 : 1.5)) return false;
+    }
+    return true;
+  }
+  let lastPt = null;
+  cv.addEventListener('pointerdown', e => {
+    const h = hit(e); if (!h) return;
+    grab = h;
+    if (h.kind === 'turn') PT.drag = h.id;
+    if (h.kind === 'many') { const [x, y] = manyPt(e); sim.pin = {i: h.i, x, y}; lastPt = [x, y, performance.now(), x, y, performance.now()]; }
+    cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; e.preventDefault(); draw();
   });
   cv.addEventListener('pointermove', e => {
     const s = sub();
-    if (!grab) {
-      if (S.view === 'pair' && S.mode === 'dip') {
-        const L = pairLayout(), r = S.sep * contact(s), rect = cv.getBoundingClientRect();
-        const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
-        cv.style.cursor = Math.min(Math.hypot(x + r / 2, y), Math.hypot(x - r / 2, y)) < halfLen(s) + 0.4 ? 'grab' : '';
-      } else cv.style.cursor = '';
-      return;
+    if (!grab) { cv.style.cursor = hit(e) ? 'grab' : ''; return; }
+    if (grab.kind === 'turn') {
+      const [x, y] = pairPt(e);
+      const a = grab.t0 + Math.atan2(y, x - grab.mx) - grab.a0;
+      if (grab.id === 'A') PT.ta = a; else PT.tb = a;
+      const r = S.sep * contact(s), f = muDir(s);
+      PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
+    } else if (grab.kind === 'sep') {
+      const [x] = pairPt(e), rc = contact(s), other = (grab.id === 'A' ? 1 : -1) * S.sep * rc / 2;
+      // the other atom stays put; the distance follows the pointer, and the pair is re-centred
+      S.sep = Math.min(2.5, Math.max(1, Math.abs(other - x) / rc));
+      $('#iSep').value = S.sep; PT.hist = []; PT.sum = 0; PT.n = 0; save(); renderLive();
+    } else if (grab.kind === 'move') {
+      const [x, y] = pairPt(e), off = [grab.off0[0] + x - grab.x0, grab.off0[1] + y - grab.y0];
+      if (okOffset(off)) PT.off = off;
+      else if (okOffset([off[0], PT.off[1]])) PT.off = [off[0], PT.off[1]];
+      else if (okOffset([PT.off[0], off[1]])) PT.off = [PT.off[0], off[1]];
+    } else if (grab.kind === 'many' && sim && sim.pin) {
+      const [x, y] = manyPt(e); sim.pin.x = x; sim.pin.y = y;
+      lastPt = [x, y, performance.now(), lastPt[0], lastPt[1], lastPt[2]];
     }
-    const L = pairLayout(), rect = cv.getBoundingClientRect();
-    const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
-    const a = grab.t0 + Math.atan2(y, x - grab.mx) - grab.a0;
-    if (grab.id === 'A') PT.ta = a; else PT.tb = a;
-    const r = S.sep * contact(s), f = muDir(s);
-    PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
     if (!playing) draw();
   });
-  const drop = () => { if (grab) { grab = null; PT.drag = null; cv.style.cursor = ''; } };
+  const drop = () => {
+    if (!grab) return;
+    if (grab.kind === 'many' && sim && sim.pin) {
+      // throw: hand the molecule the pointer's recent velocity (Å per simulated time unit)
+      const m = sim.mol[sim.pin.i], dtr = Math.max(0.016, (lastPt[2] - lastPt[5]) / 1000);
+      const per = 1.1 * SPEED[S.speed] * sim.t0;              // simulated time per real second
+      let vx = (lastPt[0] - lastPt[3]) / dtr / per, vy = (lastPt[1] - lastPt[4]) / dtr / per;
+      const vmax = 4 * Math.sqrt(Math.max(S.T, sim.s.bp) / sim.s.mass), v = Math.hypot(vx, vy);
+      if (v > vmax) { vx *= vmax / v; vy *= vmax / v; }
+      if (performance.now() - lastPt[2] < 120) { m.vx = vx; m.vy = vy; }
+      sim.pin = null;
+    }
+    grab = null; PT.drag = null; cv.style.cursor = '';
+  };
   cv.addEventListener('pointerup', drop); cv.addEventListener('pointercancel', drop);
   new ResizeObserver(resize).observe($('#iViewer'));
 }
