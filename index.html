@@ -7212,15 +7212,24 @@ function drawPairDisp(L) {
       txt(sym(p), X, Y - Math.max(12, 0.45 * k), '#E3E6EB', Math.max(11, Math.min(16, 0.38 * k)), 600);
     }
   }
-  // δ labels on the x-facing sides, faded by how far the cloud has moved
-  const lab = (x, d, rr) => {
-    const a = Math.min(1, Math.abs(d[0]) / (0.9 * amp)); if (a < 0.15) return;
-    const sgn = Math.sign(d[0]), off = (rr - 0.42) * k;
+  // δ labels follow the actual shift of the cloud: δ− on the side the electrons moved to, δ+ on the side they left
+  const lab = (x, d, ex, ey) => {
+    const m = Math.hypot(d[0], d[1]), a = Math.min(1, m / (0.9 * amp)); if (a < 0.15) return;
+    const ux = d[0] / m, uy = d[1] / m;
+    // distance from the centre to the cloud's edge in that direction (ellipse with semi-axes ex, ey)
+    const edge = ex * ey / Math.hypot(ey * ux, ex * uy);
+    const r = Math.max(0.5, edge * 0.6);
+    const cxs = x + d[0] * k, cys = cy + d[1] * k;           // shifted cloud centre
     g.globalAlpha = a;
-    txt('δ−', x + sgn * off, cy, '#FF8A80', 16, 600); txt('δ+', x - sgn * off, cy, '#8FB0FF', 16, 600);
+    for (const [t, X0, Y0, col] of [['δ−', cxs + ux * r * k, cys + uy * r * k, '#FF8A80'], ['δ+', x - ux * r * k, cy - uy * r * k, '#8FB0FF']]) {
+      g.font = '600 16px "IBM Plex Sans",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 3.5; g.strokeStyle = 'rgba(10,13,18,.85)'; g.strokeText(t, X0, Y0);
+      g.fillStyle = col; g.fillText(t, X0, Y0);
+    }
     g.globalAlpha = 1;
   };
-  lab(xa, PT.dA, rx); lab(xb, PT.dB, rx);
+  const ex = s.site.length > 1 ? rx : Rc, ey = s.site.length > 1 ? ry : Rc;
+  lab(xa, PT.dA, ex, ey); lab(xb, PT.dB, ex, ey);
   // attraction: a pulse between the facing sides, stronger when the dipoles are larger
   if (S.lines) {
     const att = Math.min(1, -PT.U / (Math.abs(C.london(s, rc)) * 2.2));
