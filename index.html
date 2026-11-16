@@ -6861,7 +6861,7 @@ if (S.view !== 'many') S.view = 'pair';
 if (!['slow', 'normal', 'fast'].includes(S.speed)) S.speed = 'normal';
 S.T = Math.min(600, Math.max(2, +S.T || 298)); S.sep = Math.min(2.5, Math.max(1, +S.sep || 1.15));
 const save = () => ls.set('aov.imf', JSON.stringify(S));
-const SPEED = {slow: 0.45, normal: 1, fast: 2.4};
+const SPEED = {slow: 0.2, normal: 0.45, fast: 1};
 const sub = () => SUB[S.sub[S.mode]];
 
 // temperature slider is logarithmic: 2 K … 600 K
@@ -7222,7 +7222,7 @@ function manyStep(dt) {
   sim.advance(dt * 1.1 * SPEED[S.speed]);
   ana = sim.analyse();
   if (S.mode === 'disp') {   // flickering clouds: random part + a share induced by close neighbours
-    const s = sub(), amp = ampOf(s) * 1.1, k1 = Math.exp(-dt / 0.3), k2 = amp * Math.sqrt(1 - k1 * k1);
+    const s = sub(), amp = ampOf(s) * 1.1, k1 = Math.exp(-dt * SPEED[S.speed] / 0.3), k2 = amp * Math.sqrt(1 - k1 * k1);
     own = own.map(c => [c[0] * k1 + k2 * gauss(), c[1] * k1 + k2 * gauss()]);   // random part only, so the induced part cannot feed back
     const lim = 1.6 * sim.r0;
     clouds = own.map((c, i) => {
