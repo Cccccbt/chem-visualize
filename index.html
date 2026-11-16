@@ -1553,6 +1553,7 @@ body.side-off .app > .panel{display:none}
           <button type="button" data-t="bp" id="iTbp">Its boiling point</button>
           <button type="button" data-t="298">Room temperature</button>
           <button type="button" data-t="77">Liquid N<sub>2</sub> (77 K)</button>
+          <button type="button" data-t="0">Absolute zero (0 K)</button>
         </div>
       </div>
       <div class="toggles ilayers" id="iLayers">
@@ -7025,16 +7026,17 @@ if (!(S.mode in MODES)) S.mode = DEF.mode;
 for (const m in MODES) if (!MODES[m].subs.includes(S.sub[m])) S.sub[m] = MODES[m].def;
 if (S.view !== 'many') S.view = 'pair';
 if (!['slow', 'normal', 'fast'].includes(S.speed)) S.speed = 'normal';
-S.T = Math.min(600, Math.max(2, +S.T || 298)); S.sep = Math.min(2.5, Math.max(1, +S.sep || 1.15));
+S.T = Math.min(600, Math.max(0, isFinite(+S.T) ? +S.T : 298)); S.sep = Math.min(2.5, Math.max(1, +S.sep || 1.15));
 const save = () => ls.set('aov.imf', JSON.stringify(S));
 const SPEED = {slow: 0.07, normal: 0.45, fast: 1};
 const sub = () => SUB[S.sub[S.mode]];
 
 // temperature slider is logarithmic: 2 K … 600 K
-const TLO = Math.log(2), THI = Math.log(600);
-const t2s = T => Math.round((Math.log(T) - TLO) / (THI - TLO) * 1000);
-const s2t = v => Math.exp(TLO + (THI - TLO) * v / 1000);
-const fmtT = T => `${T < 20 ? T.toFixed(1) : Math.round(T)} K (${num(T - 273.15, 0)} °C)`;
+// temperature slider: the far-left notch is 0 K, the rest is logarithmic from 1 K to 600 K
+const TLO = Math.log(1), THI = Math.log(600);
+const t2s = T => T < 1 ? 0 : Math.max(1, Math.round((Math.log(T) - TLO) / (THI - TLO) * 1000));
+const s2t = v => v <= 0 ? 0 : Math.exp(TLO + (THI - TLO) * v / 1000);
+const fmtT = T => T === 0 ? `0 K (${MINUS}273.15 °C) — absolute zero` : `${T < 20 ? T.toFixed(1) : Math.round(T)} K (${num(T - 273.15, 0)} °C)`;
 
 /* ---------- canvas ---------- */
 let inited = false, raf = 0, last = 0, playing = !calm;
@@ -7162,12 +7164,14 @@ function pairStep(dt) {
     const shape = (4 * PT.dA[0] ** 2 + PT.dA[1] ** 2) / (5 * amp * amp);
     PT.U = C.london(s, r) * shape;
   } else if (S.mode === 'dip') {
-    const r = S.sep * contact(s), RT = C.R_KJ * S.T, D = 1.6;
+    // rotational Brownian motion with fixed friction: the random kicks scale with T (Einstein), the
+    // torque does not, so at 0 K the pair just slides into the best lineup and stays there
+    const r = S.sep * contact(s), D0 = 1.6, mob = D0 / (C.R_KJ * 298), D = D0 * S.T / 298;
     const f = muDir(s), ta = PT.ta + f, tb = PT.tb + f;
     const sA = Math.sqrt(2 * D * dt), lim = 0.35;
     const clamp = v => Math.max(-lim, Math.min(lim, v));
-    if (PT.drag !== 'A') PT.ta += clamp(-C.dipdA(s.mu, r, ta, tb) / RT * D * dt + sA * gauss());
-    if (PT.drag !== 'B') PT.tb += clamp(-C.dipdB(s.mu, r, ta, tb) / RT * D * dt + sA * gauss());
+    if (PT.drag !== 'A') PT.ta += clamp(-C.dipdA(s.mu, r, ta, tb) * mob * dt + sA * gauss());
+    if (PT.drag !== 'B') PT.tb += clamp(-C.dipdB(s.mu, r, ta, tb) * mob * dt + sA * gauss());
     PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
   } else if (S.mode === 'all') {
     // flickering clouds for the L layer: A fluctuates, B follows
@@ -7696,9 +7700,12 @@ function renderLive() {
       if (Ud) rows.push(['Dispersion (average)', `${num(Ud, 2)} kJ/mol`]);
       rows.push(['Thermal energy RT', `${RT.toFixed(2)} kJ/mol<small>when RT is large the tumbling wins and the lineup is lost</small>`]);
     } else if (S.mode === 'all') {
-      const RT = C.R_KJ * S.T, cL = 0.75 * s.ie * s.alpha * s.alpha, cD = (2 / 3) * (C.KD * s.mu * s.mu) ** 2 / RT;
+      // at contact distance; Keesom's thermal average −(2/3)μ⁴/(RT r⁶) cannot exceed the fully lined-up value
+      // −2μ²/r³, which is what it tends to as T → 0
+      const RT = C.R_KJ * S.T, rr = Math.pow(2, 1 / 6) * s.site.find(a => a.heavy).sg, uDD = C.KD * s.mu * s.mu / rr ** 3;
+      const cL = 0.75 * s.ie * s.alpha * s.alpha / rr ** 6, cD = s.mu ? Math.min(RT > 0 ? (2 / 3) * uDD * uDD / RT : Infinity, 2 * uDD) : 0;
       const fL = cL / (cL + cD), fD = 1 - fL;
-      rows.push(['L vs D', `${Math.round(fL * 100)} % dispersion · ${Math.round(fD * 100)} % dipole–dipole<div class="ishare"><i style="width:${(fL * 100).toFixed(1)}%;background:#A9C1FF">${fL > 0.12 ? 'L' : ''}</i><i style="width:${(fD * 100).toFixed(1)}%;background:#8FB0FF;filter:saturate(2) brightness(.8)">${fD > 0.12 ? 'D' : ''}</i></div><small>share of the van der Waals attraction at ${Math.round(S.T)} K (London vs Keesom); dipole–dipole matters less when hot</small>`]);
+      rows.push(['L vs D', `${Math.round(fL * 100)} % dispersion · ${Math.round(fD * 100)} % dipole–dipole<div class="ishare"><i style="width:${(fL * 100).toFixed(1)}%;background:#A9C1FF">${fL > 0.12 ? 'L' : ''}</i><i style="width:${(fD * 100).toFixed(1)}%;background:#8FB0FF;filter:saturate(2) brightness(.8)">${fD > 0.12 ? 'D' : ''}</i></div><small>share of the van der Waals attraction at ${Math.round(S.T)} K (London vs Keesom); dipole–dipole matters less when hot, most at 0 K where the dipoles stay lined up</small>`]);
       rows.push(['Hydrogen bonds', s.hb ? `yes · ≈ ${s.hb.e} kJ/mol each<small>on top of L and D, and much stronger per contact</small>` : 'none']);
     } else if (s.hb) {
       rows.push(['Hydrogen bond', `≈ ${s.hb.e} kJ/mol<small>${s.hb.cov_name} covalent bond: ${s.hb.cov} kJ/mol (${Math.round(s.hb.cov / s.hb.e)}× stronger)</small>`]);
@@ -7727,7 +7734,7 @@ function setSub(id) {
   if (!MODES[S.mode].subs.includes(id)) { const m = Object.keys(MODES).find(k => MODES[k].subs.includes(id)); if (!m) return; S.mode = m; }
   S.sub[S.mode] = id; pairReset(); save(); renderPanel(); draw();
 }
-function setT(T) { S.T = Math.min(600, Math.max(2, T)); PT.sum = 0; PT.n = 0; if (sim) sim.T = S.T; save(); $('#iT').value = t2s(S.T); $('#iTOut').textContent = fmtT(S.T); renderLive(); }
+function setT(T) { S.T = Math.min(600, Math.max(0, T)); PT.sum = 0; PT.n = 0; if (sim) sim.T = S.T; save(); $('#iT').value = t2s(S.T); $('#iTOut').textContent = fmtT(S.T); renderLive(); }
 function bind() {
   cv = $('#iCanvas'); g = cv.getContext('2d');
   $('#iMode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.m); });
