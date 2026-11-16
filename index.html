@@ -7208,7 +7208,7 @@ function drawPairDisp(L) {
     // nuclei and core electrons: small dots
     for (const p of place(s, 0, 0, rot)) {
       const X = x + p.X * k, Y = cy + p.Y * k;
-      g.beginPath(); g.arc(X, Y, Math.max(3, 0.18 * k), 0, Math.PI * 2); g.fillStyle = '#F2C46D'; g.fill();
+      g.beginPath(); g.arc(X, Y, Math.max(2.5, 0.09 * k), 0, Math.PI * 2); g.fillStyle = '#F2C46D'; g.fill();
       txt(sym(p), X, Y - Math.max(12, 0.45 * k), '#E3E6EB', Math.max(11, Math.min(16, 0.38 * k)), 600);
     }
   }
@@ -7230,6 +7230,23 @@ function drawPairDisp(L) {
   };
   const ex = s.site.length > 1 ? rx : Rc, ey = s.site.length > 1 ? ry : Rc;
   lab(xa, PT.dA, ex, ey); lab(xb, PT.dB, ex, ey);
+  // off-centre marker: where the centre of the electron cloud is now, joined to the centre of the nuclei
+  for (const [x, d] of [[xa, PT.dA], [xb, PT.dB]]) {
+    const X1 = x + d[0] * k, Y1 = cy + d[1] * k, m = Math.hypot(X1 - x, Y1 - cy);
+    g.save();
+    g.strokeStyle = 'rgba(227,230,235,.55)'; g.lineWidth = 1; g.setLineDash([2, 3]);
+    g.beginPath(); g.arc(x, cy, Math.max(4, m), 0, 7); g.stroke(); g.setLineDash([]);   // how far it has moved
+    if (m > 2) {
+      const ux = (X1 - x) / m, uy = (Y1 - cy) / m;
+      g.strokeStyle = '#FFD27A'; g.fillStyle = '#FFD27A'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(x, cy); g.lineTo(X1 - ux * 4, Y1 - uy * 4); g.stroke();
+      g.beginPath(); g.moveTo(X1, Y1); g.lineTo(X1 - ux * 7 - uy * 3.5, Y1 - uy * 7 + ux * 3.5); g.lineTo(X1 - ux * 7 + uy * 3.5, Y1 - uy * 7 - ux * 3.5); g.closePath(); g.fill();
+    }
+    // × at the cloud centre
+    g.strokeStyle = '#FF8A80'; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(X1 - 6, Y1 - 6); g.lineTo(X1 + 6, Y1 + 6); g.moveTo(X1 + 6, Y1 - 6); g.lineTo(X1 - 6, Y1 + 6); g.stroke();
+    g.restore();
+  }
   // attraction: a pulse between the facing sides, stronger when the dipoles are larger
   if (S.lines) {
     const att = Math.min(1, -PT.U / (Math.abs(C.london(s, rc)) * 2.2));
@@ -7546,7 +7563,7 @@ function renderPanel() {
   $('#iHow').innerHTML = M.how;
   $('#iSim').innerHTML = SIM_NOTE; $('#iSim').hidden = S.view !== 'many';
   $('#iLegend').innerHTML = S.mode === 'disp'
-    ? '<span><i style="background:#FF6B5E"></i>δ− (electrons piled up)</span><span><i style="background:#5C8CFF"></i>δ+</span>'
+    ? '<span><i style="background:#FF6B5E"></i>δ− (electrons piled up)</span><span><i style="background:#5C8CFF"></i>δ+</span>' + (S.view === 'pair' ? '<span><b style="color:#FF8A80;font-weight:700">×</b> centre of electron cloud</span><span><i style="background:#FFD27A"></i>shift from the nucleus</span>' : '')
     : S.charge ? '<span><i style="background:#FF6B5E"></i>δ−</span><span><i style="background:#5C8CFF"></i>δ+</span><span><i style="background:#FFD27A"></i>' + (S.mode === 'hb' ? 'hydrogen bond' : 'attraction') + '</span>'
     : '<span><i style="background:#FFD27A"></i>' + (S.mode === 'hb' ? 'hydrogen bond' : 'attraction') + '</span>';
   renderBp(); renderLive();
