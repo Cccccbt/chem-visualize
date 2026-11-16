@@ -620,6 +620,39 @@ body.side-off .app > .panel{display:none}
 .mel{font-weight:400;color:#FFD27A;margin-left:4px;letter-spacing:-1px}
 .mop{position:absolute;left:0;top:0;font:700 22px/1 var(--f-body);color:var(--fg);pointer-events:none;will-change:transform}
 @media (max-width:760px){ #mViewer{height:62svh;min-height:360px} #mApp .qtitle{max-width:calc(100vw - 150px)} }
+/* ---------- intermolecular forces ---------- */
+#iApp [hidden]{display:none!important}
+#iApp .viewer canvas{cursor:default}
+.iforce button{font-size:12.5px;line-height:1.25;padding:7px 4px}
+.ivw{grid-template-columns:auto auto;padding:2px;background:var(--glass)}
+.ivw button{padding:4px 10px;font-size:12.5px}
+.ifm{font:500 .8em var(--f-mono);color:var(--muted);margin-left:4px}
+.ichips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ichips span{font-size:12px;border-radius:999px;padding:2px 9px;border:1px solid var(--line)}
+.ichips .y{color:#FFD27A;border-color:rgba(255,210,122,.45);background:rgba(255,210,122,.07)}
+.ichips .n{color:var(--muted);opacity:.7}
+.ibgrp{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.ibgrp h3{margin:0 0 3px;font:500 11.5px var(--f-body);color:var(--muted)}
+.ibar{display:grid;grid-template-columns:44px minmax(0,1fr) 52px;grid-template-rows:auto auto;column-gap:8px;align-items:center;border:1px solid transparent;background:none;border-radius:6px;padding:3px 6px;text-align:left}
+.ibar:hover{border-color:var(--line)}
+.ibar.on{border-color:var(--accent);background:var(--sel,rgba(169,193,255,.08))}
+.ibl{font:500 13px var(--f-mono)}
+.ibt{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
+.ibt i{display:block;height:100%;background:#5d6a80;border-radius:4px}
+.ibar.on .ibt i{background:var(--accent)}
+.ibv{font:500 12px var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.ibar small{grid-column:2 / 4;font:400 10.5px var(--f-mono);color:var(--muted)}
+.ihyd{width:100%;height:auto;display:block}
+.ihyd .gl{stroke:#252C37;stroke-width:1}
+.ihyd .rt{stroke:#A9C1FF;stroke-width:1;stroke-dasharray:3 4;opacity:.6}
+.ihyd .ax{fill:var(--muted);font:500 10.5px var(--f-mono)}
+.ihyd .lb{font:600 11px var(--f-mono)}
+.ihyd .pick{cursor:pointer}
+.ileg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted);margin-top:4px}
+.ileg span{display:flex;align-items:center;gap:5px}
+.ileg i{width:10px;height:3px;border-radius:2px}
+#iLegend i{border-radius:50%}
+@media (max-width:760px){ #iViewer{height:64svh;min-height:380px} .ivw button{padding:4px 7px;font-size:12px} #iViewer .hud-tr{top:auto;bottom:12px;left:12px;right:12px;justify-content:flex-end;flex-wrap:wrap} #iViewer .hud-bl{display:none} }
 </style>
 
 <header class="site">
@@ -1424,6 +1457,88 @@ body.side-off .app > .panel{display:none}
 
     <p class="note"><b>How it works.</b> When two atoms approach, each pair of matching atomic orbitals combines in two ways. <b>In phase</b> (ψ<sub>A</sub> + ψ<sub>B</sub>) gives a lower-energy <b>bonding</b> orbital with density between the nuclei. <b>Out of phase</b> (ψ<sub>A</sub> − ψ<sub>B</sub>) gives a higher-energy <b>antibonding</b> orbital (*) with a node between them. Electrons fill the molecular orbitals from the bottom up, two per orbital, spreading over equal-energy orbitals before pairing (Hund's rule). <b>Bond order</b> = ½ (bonding − antibonding electrons); 0 means no stable molecule.</p>
     <p class="note"><b>Shapes</b> are computed: ψ = φ<sub>A</sub> ± φ<sub>B</sub> from hydrogen-like 1s, 2s and 2p wavefunctions with Clementi effective nuclear charges, at the experimental bond length, drawn as the surface that encloses 90 % of the electron probability (in General mode, using the period-2 atom with that many valence electrons). Pink is +, blue is −. This is the simple LCAO picture: it leaves out 2s–2p mixing in the σ orbitals. The energy levels are schematic, showing order, not exact values.</p>
+  </aside>
+</div>
+
+<div class="app" id="iApp" hidden>
+  <main class="viewer" id="iViewer">
+    <canvas id="iCanvas" role="img" aria-label="Animated molecules showing an intermolecular force"></canvas>
+    <div class="hud hud-tl">
+      <div class="qtitle"><div class="tprop" id="iTitle"></div><div class="qtuple" id="iSub"></div></div>
+      <div class="chip" id="iPhase" role="status"></div>
+    </div>
+    <div class="hud hud-tr">
+      <div class="seg ivw" role="radiogroup" aria-label="View" id="iView">
+        <button type="button" role="radio" data-v="pair">Close-up</button>
+        <button type="button" role="radio" data-v="many">Many molecules</button>
+      </div>
+      <button class="hbtn" id="iPlay" type="button">Pause</button>
+      <button class="hbtn" id="iReset" type="button">Reset</button>
+    </div>
+    <div class="hud hud-bl"><div class="legend" id="iLegend"></div></div>
+  </main>
+
+  <aside class="panel">
+    <header class="brand">
+      <h1>Intermolecular Forces</h1>
+      <p>The attractions between molecules — the reason substances condense into liquids and why their boiling points differ.</p>
+    </header>
+
+    <section aria-label="Force">
+      <h2 class="sec-h">Force</h2>
+      <div class="seg three iforce" role="radiogroup" aria-label="Force" id="iMode">
+        <button type="button" role="radio" data-m="disp">London dispersion</button>
+        <button type="button" role="radio" data-m="dip">Dipole–dipole</button>
+        <button type="button" role="radio" data-m="hb">Hydrogen bonding</button>
+      </div>
+      <p class="ecap" id="iLead" style="margin:10px 0 0"></p>
+    </section>
+
+    <section aria-label="Substance">
+      <h2 class="sec-h">Substance</h2>
+      <div class="cfuel" role="radiogroup" aria-label="Substance" id="iSubs"></div>
+    </section>
+
+    <section aria-label="Conditions" class="ctl">
+      <h2 class="sec-h" style="margin-bottom:0">Conditions</h2>
+      <div class="slider" id="iSepRow">
+        <label for="iSep"><span>Distance between the two</span><output id="iSepOut"></output></label>
+        <input type="range" id="iSep" min="1" max="2.5" step="0.01">
+      </div>
+      <div class="slider" id="iTRow">
+        <label for="iT"><span>Temperature</span><output id="iTOut"></output></label>
+        <input type="range" id="iT" min="0" max="1000" step="1">
+        <div class="bulk" style="margin-top:6px">
+          <button type="button" data-t="bp" id="iTbp">Its boiling point</button>
+          <button type="button" data-t="298">Room temperature</button>
+          <button type="button" data-t="77">Liquid N<sub>2</sub> (77 K)</button>
+        </div>
+      </div>
+      <div class="toggles">
+        <label class="sw"><input type="checkbox" id="iCharge">Partial charges</label>
+        <label class="sw"><input type="checkbox" id="iLines">Attraction lines</label>
+      </div>
+      <div class="seg three" role="radiogroup" aria-label="Playback speed" id="iSpeed">
+        <button type="button" role="radio" data-s="slow">Slow</button>
+        <button type="button" role="radio" data-s="normal">Normal</button>
+        <button type="button" role="radio" data-s="fast">Fast</button>
+      </div>
+    </section>
+
+    <section aria-label="This substance">
+      <h2 class="sec-h">This substance</h2>
+      <div class="ichips" id="iForces"></div>
+      <dl class="readout" id="iRead"></dl>
+    </section>
+
+    <section aria-label="Boiling points">
+      <h2 class="sec-h" id="iBpH">Boiling points</h2>
+      <div id="iBp"></div>
+    </section>
+
+    <p class="note" id="iHow"></p>
+    <p class="note" id="iSim"></p>
+    <p class="note"><b>Data.</b> Boiling points at 1 atm, dipole moments, polarizability volumes and ionization energies from the CRC Handbook and NIST Chemistry WebBook. Hydrogen-bond energies are approximate gas-phase dimer values.</p>
   </aside>
 </div>
 
@@ -5148,7 +5263,7 @@ function initScene() {
   new ResizeObserver(resize).observe(viewer); resize();
   const loop = now => {
     requestAnimationFrame(loop);
-    const dt = Math.min(0.05, (now - last) / 1000 || 0); last = now;
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now;
     if ($('#bApp').hidden) return;
     // ease toward the targets
     const ease = (a, b, k) => { const n = a + (b - a) * Math.min(1, dt * k); return Math.abs(b - n) < 0.006 ? b : n; };
@@ -6409,6 +6524,974 @@ window.initMO = function () {
   set(off);
 })();
 </script>
+<script id="imfCore">
+/* ===== intermolecular-forces core (no DOM) ===== */
+window.IMFCore = (function () {
+  // site types: σ (Å), ε (K), mass (amu), colour, display radius (Å)
+  const EL = {
+    H:  [1.0,   5,   1.008, '#E6EAF0', 0.62],
+    He: [2.6,  10,   4.003, '#BDF5F5', 1.20],
+    Ne: [2.8,  36,  20.18,  '#9FD8EE', 1.32],
+    Ar: [3.4, 120,  39.95,  '#7CC6DC', 1.58],
+    Kr: [3.65,170,  83.80,  '#5DAFC9', 1.70],
+    Xe: [4.0, 230, 131.29,  '#4796B0', 1.86],
+    C:  [3.4,  40,  12.01,  '#8E96A3', 1.45],
+    N:  [3.3,  37,  14.01,  '#5B7BFA', 1.40],
+    O:  [3.1,  77,  16.00,  '#F2554C', 1.36],
+    F:  [2.9,  52,  19.00,  '#8FD36A', 1.30],
+    S:  [3.6, 140,  32.06,  '#E8D13A', 1.62],
+    Cl: [3.4, 170,  35.45,  '#4FCF5F', 1.58],
+    Br: [3.6, 250,  79.90,  '#B5503F', 1.70],
+    I:  [3.9, 330, 126.90,  '#9A4FB8', 1.86],
+    CH4:[3.7, 148,  16.04,  '#8E96A3', 1.45]
+  };
+  const KC = 167100;              // Coulomb constant, K·Å/e²
+  const KD = 60.2;                // μ²/(4πε₀r³): kJ/mol for μ in D, r in Å
+  const R_KJ = 8.314462e-3;       // kJ/(mol·K)
+  const deg = Math.PI / 180;
+  const pol = (r, a) => [r * Math.cos(a * deg), r * Math.sin(a * deg)];
+
+  /* sites: [type, x, y, q]; lp: lone-pair directions (deg) for drawing; donorH: indices of H on N/O/F
+     M g/mol, bp K, mu D, alpha Å³ (polarizability volume), ie kJ/mol (first ionization energy) */
+  const S = {};
+  const atom = (id, name, M, bp, alpha, ie) => S[id] = {id, name, f: id, M, bp, mu: 0, alpha, ie, sites: [[id, 0, 0, 0]]};
+  atom('He', 'Helium', 4.003, 4.2, 0.205, 2372);
+  atom('Ne', 'Neon', 20.18, 27.1, 0.396, 2081);
+  atom('Ar', 'Argon', 39.95, 87.3, 1.64, 1521);
+  atom('Kr', 'Krypton', 83.80, 119.9, 2.48, 1351);
+  atom('Xe', 'Xenon', 131.29, 165.0, 4.04, 1170);
+  const di = (id, name, f, a, b, d, q, M, bp, mu, alpha, ie) =>
+    S[id] = {id, name, f, M, bp, mu, alpha, ie, sites: [[a, -d / 2, 0, q], [b, d / 2, 0, -q]]};
+  di('F2', 'Fluorine', 'F<sub>2</sub>', 'F', 'F', 1.42, 0, 38.00, 85.0, 0, 1.38, 1515);
+  di('Cl2', 'Chlorine', 'Cl<sub>2</sub>', 'Cl', 'Cl', 1.99, 0, 70.90, 239.1, 0, 4.61, 1110);
+  di('Br2', 'Bromine', 'Br<sub>2</sub>', 'Br', 'Br', 2.28, 0, 159.81, 332.0, 0, 7.02, 1015);
+  di('I2', 'Iodine', 'I<sub>2</sub>', 'I', 'I', 2.67, 0, 253.81, 457.6, 0, 10.2, 900);
+  di('N2', 'Nitrogen', 'N<sub>2</sub>', 'N', 'N', 1.10, 0, 28.01, 77.4, 0, 1.74, 1503);
+  // CO's small dipole has its negative end on carbon
+  di('CO', 'Carbon monoxide', 'CO', 'C', 'O', 1.13, -0.02, 28.01, 81.6, 0.11, 1.95, 1352);
+  di('HCl', 'Hydrogen chloride', 'HCl', 'H', 'Cl', 1.27, 0.18, 36.46, 188.1, 1.11, 2.63, 1225);
+  di('ICl', 'Iodine monochloride', 'ICl', 'I', 'Cl', 2.32, 0.11, 162.36, 370.4, 1.24, null, 970);
+  S.H2O = {id: 'H2O', name: 'Water', f: 'H<sub>2</sub>O', M: 18.02, bp: 373.15, mu: 1.85, alpha: 1.45, ie: 1216,
+    sites: [['O', 0, 0, -0.8], ['H', ...pol(0.96, 52.25), 0.4], ['H', ...pol(0.96, -52.25), 0.4]], lp: [137.6, -137.6],
+    hb: {xh: 0.96, hb: 1.97, e: 21, cov: 463, cov_name: 'O–H'}};
+  S.HF = {id: 'HF', name: 'Hydrogen fluoride', f: 'HF', M: 20.01, bp: 292.7, mu: 1.83, alpha: 0.80, ie: 1550,
+    sites: [['F', 0, 0, -0.41], ['H', 0.92, 0, 0.41]], lp: [90, 180, -90],
+    hb: {xh: 0.92, hb: 1.85, e: 19, cov: 567, cov_name: 'F–H'}};
+  S.NH3 = {id: 'NH3', name: 'Ammonia', f: 'NH<sub>3</sub>', M: 17.03, bp: 239.8, mu: 1.47, alpha: 2.10, ie: 977,
+    sites: [['N', 0, 0, -0.9], ['H', 1.01, 0, 0.3], ['H', ...pol(1.01, 100), 0.3], ['H', ...pol(1.01, -100), 0.3]], lp: [180],
+    hb: {xh: 1.01, hb: 2.25, e: 13, cov: 391, cov_name: 'N–H'}};
+  S.H2S = {id: 'H2S', name: 'Hydrogen sulfide', f: 'H<sub>2</sub>S', M: 34.08, bp: 212.9, mu: 0.97, alpha: 3.78, ie: 1009,
+    sites: [['S', 0, 0, -0.24], ['H', ...pol(1.34, 46), 0.12], ['H', ...pol(1.34, -46), 0.12]], lp: [135, -135]};
+  S.CH4 = {id: 'CH4', name: 'Methane', f: 'CH<sub>4</sub>', M: 16.04, bp: 111.7, mu: 0, alpha: 2.59, ie: 1215,
+    sites: [['CH4', 0, 0, 0]], deco: [[1.09, 45], [1.09, 135], [1.09, -135], [1.09, -45]]};
+
+  // measured once offline: T/T_b at which half the molecules sit in clusters with unit scaling; dividing
+  // by it puts that midpoint at the real boiling point
+  const T50 = {He: 1.417, Ne: 1.358, Ar: 1.433, Kr: 1.44, Xe: 1.459, F2: 0.866, Cl2: 0.854, Br2: 0.824, I2: 0.796, N2: 0.973, CO: 0.988, HCl: 0.723, ICl: 0.695, H2O: 0.694, HF: 0.585, NH3: 0.427, H2S: 0.779, CH4: 1.397};
+  const HB_EL = new Set(['N', 'O', 'F']);
+  // per-substance derived data: sites relative to the centre of mass, flags for H-bond donors/acceptors
+  for (const k in S) {
+    const s = S[k];
+    let m = 0, cx = 0, cy = 0;
+    for (const [t, x, y] of s.sites) { const w = EL[t][2]; m += w; cx += w * x; cy += w * y; }
+    cx /= m; cy /= m;
+    s.mass = m;
+    s.site = s.sites.map(([t, x, y, q], i) => ({t, x: x - cx, y: y - cy, q, sg: EL[t][0], ep: EL[t][1], m: EL[t][2], col: EL[t][3], rad: EL[t][4], heavy: t !== 'H'}));
+    s.cx = cx; s.cy = cy;
+    // H-bond roles (gen-chem rule: H bonded to N, O or F; acceptor = N, O or F with a lone pair)
+    const heavy0 = s.site[0];
+    s.acc = s.site.map((a, i) => HB_EL.has(a.t) ? i : -1).filter(i => i >= 0);
+    s.don = HB_EL.has(heavy0.t) ? s.site.map((a, i) => a.t === 'H' ? i : -1).filter(i => i >= 0) : [];
+    let I = 0, ext = 0;
+    for (const a of s.site) {
+      const r2 = a.x * a.x + a.y * a.y;
+      I += (a.t === 'H' ? 4 : a.m) * r2;          // heavier H slows rotation enough for a stable step
+      ext = Math.max(ext, Math.sqrt(r2) + a.sg / 2);
+    }
+    s.ext = ext;     // radius that encloses the molecule
+    s.Ireal = I;
+  }
+
+  /* ---------- pair energy between two molecules (unit scale) ---------- */
+  function pairE(s, ax, ay, aa, bx, by, ba) {
+    const ca = Math.cos(aa), sa = Math.sin(aa), cb = Math.cos(ba), sb = Math.sin(ba);
+    let E = 0;
+    for (const p of s.site) {
+      const px = ax + p.x * ca - p.y * sa, py = ay + p.x * sa + p.y * ca;
+      for (const q of s.site) {
+        const qx = bx + q.x * cb - q.y * sb, qy = by + q.x * sb + q.y * cb;
+        const dx = qx - px, dy = qy - py, r2 = dx * dx + dy * dy;
+        const sg = (p.sg + q.sg) / 2, ep = Math.sqrt(p.ep * q.ep);
+        const u = sg * sg / r2, u3 = u * u * u;
+        E += 4 * ep * (u3 * u3 - u3);
+        if (p.q && q.q) E += KC * p.q * q.q / Math.sqrt(r2 + 0.25);
+      }
+    }
+    return E;
+  }
+
+  /* lowest-energy dimer, found by a coarse scan then a local refine; gives the depth to scale to b.p. */
+  function calibrate(s) {
+    if (s.cal) return s.cal;
+    let best = {E: 0};
+    const NA = 24;
+    for (let i = 0; i < NA; i++) for (let j = 0; j < NA; j++) {
+      const ph = 2 * Math.PI * i / NA, tb = 2 * Math.PI * j / NA;
+      for (let r = 1.6; r < 9; r += 0.1) {
+        const E = pairE(s, 0, 0, 0, r * Math.cos(ph), r * Math.sin(ph), tb);
+        if (E < best.E) best = {E, r, ph, tb};
+      }
+    }
+    let {r, ph, tb, E} = best, st = [0.05, 0.05, 0.05];
+    for (let it = 0; it < 300; it++) {
+      let moved = false;
+      for (let k = 0; k < 3; k++) for (const sg of [1, -1]) {
+        const v = [r, ph, tb]; v[k] += sg * st[k];
+        const e = pairE(s, 0, 0, 0, v[0] * Math.cos(v[1]), v[0] * Math.sin(v[1]), v[2]);
+        if (e < E) { E = e; [r, ph, tb] = v; moved = true; }
+      }
+      if (!moved) { st = st.map(x => x / 2); if (st[0] < 1e-4) break; }
+    }
+    s.cal = {E0: E, r0: r};
+    return s.cal;
+  }
+
+  /* ---------- the many-molecule simulation ----------
+     Units: Å, amu, K (k_B = 1). Each substance's attractions are rescaled so its dimer well depth is
+     DEPTH × its boiling point: T / T_b then decides whether the molecules cluster. */
+  const DEPTH = 3.2;
+  function Sim(sub, n, seed, drop) {
+    const s = sub, cal = calibrate(s);
+    const kf = 1 / (T50[s.id] || 1), scale = DEPTH * s.bp / -cal.E0 * kf;
+    const r0 = cal.r0;
+    const t0 = r0 * Math.sqrt(s.mass / s.bp);     // time to cross one molecule at thermal speed (T = T_b)
+    const L = r0 * Math.sqrt(n / 0.11);
+    const I = Math.max(s.Ireal, 0.12 * s.mass * r0 * r0);
+    let rnd = seed >>> 0 || 1;
+    const rand = () => { rnd ^= rnd << 13; rnd ^= rnd >>> 17; rnd ^= rnd << 5; return (rnd >>> 0) / 4294967296; };
+    const gauss = () => { let u = 0; while (u === 0) u = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rand()); };
+    const mol = [];
+    // place on a jittered grid in the middle 80 % of the box
+    const k = Math.ceil(Math.sqrt(n)), cell = drop ? Math.max(1.12 * r0, 1.6 * s.ext) : L * 0.84 / k, org = (L - cell * k) / 2;
+    const cells = []; for (let i = 0; i < k * k; i++) cells.push(i);
+    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    for (let i = 0; i < n; i++) {
+      const c = cells[i];
+      mol.push({x: org + cell * ((c % k) + 0.5 + (rand() - 0.5) * 0.3), y: org + cell * (Math.floor(c / k) + 0.5 + (rand() - 0.5) * 0.3),
+        vx: 0, vy: 0, a: rand() * Math.PI * 2, w: 0, fx: 0, fy: 0, tq: 0, px: [], py: []});
+    }
+    const ns = s.site.length;
+    for (const m of mol) { m.px = new Float64Array(ns); m.py = new Float64Array(ns); }
+    const sim = {s, mol, L, r0, t0, scale, T: s.bp, n};
+    const thermal = T => { for (const m of mol) { const v = Math.sqrt(T / s.mass); m.vx = v * gauss(); m.vy = v * gauss(); m.w = Math.sqrt(T / I) * gauss(); } };
+    thermal(s.bp * 0.6);
+    sim.thermal = thermal;
+
+    const RC = Math.max(3 * r0, 2 * s.ext + 2.5 * Math.max(...s.site.map(a => a.sg)));
+    const RS = RC * 0.75;
+    const sitePos = () => {
+      for (const m of mol) {
+        const c = Math.cos(m.a), sn = Math.sin(m.a);
+        for (let i = 0; i < ns; i++) { const p = s.site[i]; m.px[i] = m.x + p.x * c - p.y * sn; m.py[i] = m.y + p.x * sn + p.y * c; }
+      }
+    };
+    const fmax = 60 * s.bp * kf / r0 * DEPTH;
+    function forces() {
+      sitePos();
+      for (const m of mol) { m.fx = 0; m.fy = 0; m.tq = 0; }
+      let pe = 0;
+      for (let i = 0; i < n; i++) {
+        const A = mol[i];
+        for (let j = i + 1; j < n; j++) {
+          const B = mol[j];
+          const dx0 = B.x - A.x, dy0 = B.y - A.y, d2 = dx0 * dx0 + dy0 * dy0;
+          if (d2 > RC * RC) continue;
+          const d = Math.sqrt(d2);
+          // smooth switch so the cut-off does not inject energy
+          let sw = 1, dsw = 0;
+          if (d > RS) { const x = (d - RS) / (RC - RS); sw = 1 - x * x * (3 - 2 * x); dsw = -6 * x * (1 - x) / (RC - RS); }
+          let Eij = 0, fxs = 0, fys = 0;
+          const fA = [], fB = [];
+          for (let p = 0; p < ns; p++) {
+            const P = s.site[p];
+            for (let q = 0; q < ns; q++) {
+              const Q = s.site[q];
+              const dx = B.px[q] - A.px[p], dy = B.py[q] - A.py[p], r2 = dx * dx + dy * dy;
+              const sg = (P.sg + Q.sg) / 2, ep = Math.sqrt(P.ep * Q.ep) * scale;
+              const u = sg * sg / r2, u3 = u * u * u;
+              let E = 4 * ep * (u3 * u3 - u3);
+              let f = 24 * ep * (2 * u3 * u3 - u3) / r2;          // −dE/dr ÷ r
+              if (P.q && Q.q) {
+                const rs = Math.sqrt(r2 + 0.25), c = KC * scale * P.q * Q.q;
+                E += c / rs; f += c / (rs * rs * rs);
+              }
+              f *= sw;
+              const lim = fmax / Math.sqrt(r2);
+              if (f > lim) f = lim; else if (f < -lim) f = -lim;
+              Eij += E;
+              // force on B's site q is +f·(dx,dy)
+              const gx = f * dx, gy = f * dy;
+              B.fx += gx; B.fy += gy; A.fx -= gx; A.fy -= gy;
+              B.tq += (B.px[q] - B.x) * gy - (B.py[q] - B.y) * gx;
+              A.tq -= (A.px[p] - A.x) * gy - (A.py[p] - A.y) * gx;
+            }
+          }
+          if (dsw) {   // radial force from the switching function
+            const g = -Eij * dsw / d;
+            B.fx += g * dx0; B.fy += g * dy0; A.fx -= g * dx0; A.fy -= g * dy0;
+          }
+          pe += Eij * sw;
+        }
+      }
+      return pe;
+    }
+    sim.pe = forces();
+    // BAOAB-style Langevin step
+    const gam = 0.6 / t0;
+    sim.step = function (dt) {
+      const T = sim.T, M = s.mass;
+      const c1 = Math.exp(-gam * dt), c2 = Math.sqrt((1 - c1 * c1) * T);
+      for (const m of mol) {
+        m.vx += 0.5 * dt * m.fx / M; m.vy += 0.5 * dt * m.fy / M; m.w += 0.5 * dt * m.tq / I;
+        m.x += 0.5 * dt * m.vx; m.y += 0.5 * dt * m.vy; m.a += 0.5 * dt * m.w;
+        m.vx = c1 * m.vx + c2 / Math.sqrt(M) * gauss(); m.vy = c1 * m.vy + c2 / Math.sqrt(M) * gauss(); m.w = c1 * m.w + c2 / Math.sqrt(I) * gauss();
+        m.x += 0.5 * dt * m.vx; m.y += 0.5 * dt * m.vy; m.a += 0.5 * dt * m.w;
+        // walls
+        const pad = r0 * 0.5;
+        if (m.x < pad) { m.x = pad; m.vx = Math.abs(m.vx); } else if (m.x > L - pad) { m.x = L - pad; m.vx = -Math.abs(m.vx); }
+        if (m.y < pad) { m.y = pad; m.vy = Math.abs(m.vy); } else if (m.y > L - pad) { m.y = L - pad; m.vy = -Math.abs(m.vy); }
+      }
+      sim.pe = forces();
+      for (const m of mol) { m.vx += 0.5 * dt * m.fx / M; m.vy += 0.5 * dt * m.fy / M; m.w += 0.5 * dt * m.tq / I; }
+    };
+    const SPT = Math.round(160 * Math.sqrt(Math.max(1, kf)));   // steps per t0: stiffer when attractions were boosted
+    sim.dt = t0 / SPT;
+    sim.advance = function (tUnits) {   // advance by tUnits × t0
+      const nstep = Math.max(1, Math.round(tUnits * SPT));
+      for (let i = 0; i < nstep; i++) sim.step(sim.dt);
+    };
+    // structure: neighbour counts, H-bonds, attractive polar contacts
+    sim.analyse = function () {
+      sitePos();
+      const nb = new Int16Array(n), lim2 = (2 * s.ext + 2) ** 2;
+      const hb = [], dd = [];
+      const hv = s.site.map((a, i) => a.heavy ? i : -1).filter(i => i >= 0);
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const A = mol[i], B = mol[j], dx = B.x - A.x, dy = B.y - A.y;
+        if (dx * dx + dy * dy > lim2) continue;
+        let touch = false;
+        for (const p of hv) { for (const q of hv) { const sg = 1.3 * (s.site[p].sg + s.site[q].sg) / 2; if ((B.px[q] - A.px[p]) ** 2 + (B.py[q] - A.py[p]) ** 2 < sg * sg) { touch = true; break; } } if (touch) break; }
+        if (touch) { nb[i]++; nb[j]++; }
+      }
+      if (s.don.length) {
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+          if (i === j) continue;
+          const D = mol[i], A = mol[j];
+          for (const h of s.don) for (const a of s.acc) {
+            const hx = D.px[h], hy = D.py[h], ax = A.px[a], ay = A.py[a];
+            const dx = ax - hx, dy = ay - hy, r = Math.hypot(dx, dy);
+            if (r > 2.6) continue;
+            // angle X–H···A must be fairly straight
+            const xx = hx - D.px[0], xy = hy - D.py[0], lx = Math.hypot(xx, xy);
+            const cos = (xx * dx + xy * dy) / (lx * r);
+            if (cos > 0.6) hb.push([i, h, j, a, r]);
+          }
+        }
+      }
+      if (s.mu > 0.5 && !s.don.length) {
+        // polar contacts: the δ+ end of one molecule near the δ− end of another
+        let pIdx = 0, nIdx = 0;
+        s.site.forEach((a, i) => { if (a.q > s.site[pIdx].q) pIdx = i; if (a.q < s.site[nIdx].q) nIdx = i; });
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+          if (i === j) continue;
+          const A = mol[i], B = mol[j];
+          const r = Math.hypot(B.px[nIdx] - A.px[pIdx], B.py[nIdx] - A.py[pIdx]);
+          const sg = (s.site[pIdx].sg + s.site[nIdx].sg) / 2;
+          if (r < sg * 1.05) dd.push([i, pIdx, j, nIdx, r]);
+        }
+      }
+      let c2 = 0; for (let i = 0; i < n; i++) if (nb[i] >= 2) c2++;
+      return {nb, frac: c2 / n, hb, dd};
+    };
+    return sim;
+  }
+
+  /* close-up energies (kJ/mol) */
+  const london = (s, r) => s.alpha && s.ie ? -1.5 * (s.ie / 2) * s.alpha * s.alpha / Math.pow(r, 6) : 0;
+  // two point dipoles; θ measured from the line joining them
+  const dipE = (mu, r, ta, tb) => KD * mu * mu / (r * r * r) * (Math.cos(ta - tb) - 3 * Math.cos(ta) * Math.cos(tb));
+  const dipdA = (mu, r, ta, tb) => KD * mu * mu / (r * r * r) * (-Math.sin(ta - tb) + 3 * Math.sin(ta) * Math.cos(tb));
+  const dipdB = (mu, r, ta, tb) => KD * mu * mu / (r * r * r) * (Math.sin(ta - tb) + 3 * Math.cos(ta) * Math.sin(tb));
+
+  return {EL, S, Sim, calibrate, london, dipE, dipdA, dipdB, R_KJ, KD, deg, DEPTH};
+})();
+</script>
+<script>
+/* ===== intermolecular-forces page ===== */
+(() => {
+const $ = s => document.querySelector(s);
+const C = window.IMFCore, SUB = C.S;
+const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const MINUS = '−';
+const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const num = (v, d) => (v < 0 ? MINUS : '') + Math.abs(v).toFixed(d);
+
+/* ---------- modes ---------- */
+const MODES = {
+  disp: {name: 'London dispersion', subs: ['He', 'Ne', 'Ar', 'Kr', 'Xe', 'F2', 'Cl2', 'Br2', 'I2'], def: 'Ar',
+    lead: 'Every atom and molecule has them. Electrons slosh around for an instant, making a <b>temporary dipole</b> that <b>induces</b> a dipole in its neighbour. Bigger electron clouds are more <b>polarizable</b>, so the attraction grows with size.',
+    how: '<b>How it works.</b> In the close-up the left particle’s electron cloud shifts at random, so one side is briefly δ− and the other δ+. The right particle’s cloud is pushed away from that δ− side, so the two always end up facing δ+ to δ−: the instantaneous attraction flickers but never turns into repulsion. The average is the London energy, about −(3/4)·I·α²/r⁶ for two identical particles. It falls off as 1/r⁶, so it only matters at contact — try the distance slider.'},
+  dip: {name: 'Dipole–dipole', subs: ['N2', 'CO', 'F2', 'HCl', 'Br2', 'ICl'], def: 'HCl',
+    lead: 'Polar molecules have a <b>permanent dipole</b>. They turn so the δ+ end of one faces the δ− end of the next, which adds to the dispersion forces they already have. Compare each polar molecule with a nonpolar one of about the same mass.',
+    how: '<b>How it works.</b> In the close-up the two molecules tumble at the chosen temperature while the dipole–dipole energy U = (μ²/4πε₀r³)(cos θ₁₂ − 3 cos θ₁ cos θ₂) twists them. Head-to-tail and antiparallel side-by-side lineups attract; δ+ facing δ+ repels. Cold molecules settle into the attractive lineups, hot ones tumble freely, so the average attraction weakens with temperature. Drag either molecule to turn it yourself.'},
+  hb: {name: 'Hydrogen bonding', subs: ['H2O', 'HF', 'NH3', 'H2S', 'CH4'], def: 'H2O',
+    lead: 'A strong, directional dipole–dipole attraction. It needs <b>H bonded to N, O or F</b> (the donor) and a <b>lone pair on N, O or F</b> of another molecule (the acceptor). The small, nearly bare H nucleus can get very close to the lone pair.',
+    how: '<b>How it works.</b> N, O and F are small and very electronegative, so an N–H, O–H or F–H bond leaves the hydrogen with a large δ+ and almost no electron cloud of its own. It can sit about 1.8–2.3 Å from a lone pair on a neighbouring N, O or F — much closer than ordinary molecular contact. Each hydrogen bond is roughly 10–40 kJ/mol: much weaker than a covalent bond, but much stronger than other intermolecular forces. H<sub>2</sub>S and CH<sub>4</sub> are shown for contrast; their boiling points follow the ordinary size trend, while NH<sub>3</sub>, H<sub>2</sub>O and HF sit far above their heavier relatives.'}
+};
+const SIM_NOTE = '<b>Many molecules.</b> A 2D simulation with partial charges on each atom and Lennard-Jones contact forces. Each substance’s attractions are scaled so that half the molecules sit in clusters at its real boiling point: compare substances at the same temperature to see which ones condense. The structure (hydrogen-bond lines, polar lineups) comes from the charges; the timing is slowed and the box is far more crowded than a real gas.';
+
+/* ---------- state ---------- */
+const DEF = {mode: 'disp', sub: {disp: 'Ar', dip: 'HCl', hb: 'H2O'}, view: 'pair', T: 298, sep: 1.15, charge: true, lines: true, speed: 'normal'};
+const S = JSON.parse(JSON.stringify(DEF));
+try { const o = JSON.parse(ls.get('aov.imf') || '{}'); Object.assign(S, o, {sub: Object.assign({}, DEF.sub, o.sub || {})}); } catch (e) {}
+if (!(S.mode in MODES)) S.mode = DEF.mode;
+for (const m in MODES) if (!MODES[m].subs.includes(S.sub[m])) S.sub[m] = MODES[m].def;
+if (S.view !== 'many') S.view = 'pair';
+if (!['slow', 'normal', 'fast'].includes(S.speed)) S.speed = 'normal';
+S.T = Math.min(600, Math.max(2, +S.T || 298)); S.sep = Math.min(2.5, Math.max(1, +S.sep || 1.15));
+const save = () => ls.set('aov.imf', JSON.stringify(S));
+const SPEED = {slow: 0.45, normal: 1, fast: 2.4};
+const sub = () => SUB[S.sub[S.mode]];
+
+// temperature slider is logarithmic: 2 K … 600 K
+const TLO = Math.log(2), THI = Math.log(600);
+const t2s = T => Math.round((Math.log(T) - TLO) / (THI - TLO) * 1000);
+const s2t = v => Math.exp(TLO + (THI - TLO) * v / 1000);
+const fmtT = T => `${T < 20 ? T.toFixed(1) : Math.round(T)} K (${num(T - 273.15, 0)} °C)`;
+
+/* ---------- canvas ---------- */
+let inited = false, raf = 0, last = 0, playing = !calm;
+let cv, g, W = 0, H = 0, dpr = 1;
+function resize() {
+  const v = $('#iViewer'); if (!v || !cv) return;
+  const r = v.getBoundingClientRect();
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(1, r.width); H = Math.max(1, r.height);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  draw();
+}
+
+/* ---------- shared drawing helpers ---------- */
+const NEG = [255, 107, 94], POS = [92, 140, 255];
+function chargeCol(q, k = 2.2) {
+  const t = Math.max(-1, Math.min(1, q * k));
+  const base = [186, 192, 202], tgt = t < 0 ? NEG : POS, a = Math.abs(t);
+  return `rgb(${base.map((b, i) => Math.round(b + (tgt[i] - b) * a)).join(',')})`;
+}
+function atomFill(a) { return S.charge && S.mode !== 'disp' ? chargeCol(a.q || 0) : a.col; }
+function sym(a) { return a.t === 'CH4' ? 'C' : a.t; }
+function ball(x, y, r, fill, label) {
+  const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+  gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(0.35, fill); gr.addColorStop(1, shade(fill));
+  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); g.fillStyle = gr; g.fill();
+  g.lineWidth = 1; g.strokeStyle = 'rgba(10,13,18,.65)'; g.stroke();
+  if (label && r > 9) {
+    g.fillStyle = '#0A0D12'; g.font = `600 ${Math.min(22, Math.max(10, r * 0.62))}px "IBM Plex Sans",sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, x, y + 0.5);
+  }
+}
+const shadeCache = {};
+function shade(c) {
+  if (shadeCache[c]) return shadeCache[c];
+  let r, gg, b;
+  if (c[0] === '#') { r = parseInt(c.slice(1, 3), 16); gg = parseInt(c.slice(3, 5), 16); b = parseInt(c.slice(5, 7), 16); }
+  else [r, gg, b] = c.match(/\d+/g).map(Number);
+  return shadeCache[c] = `rgb(${Math.round(r * .55)},${Math.round(gg * .55)},${Math.round(b * .55)})`;
+}
+function txt(s, x, y, col, size = 13, w = 500, align = 'center') {
+  g.font = `${w} ${size}px "IBM Plex Sans",sans-serif`; g.fillStyle = col; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y);
+}
+function dash(x1, y1, x2, y2, col, w = 2, pat = [5, 5]) {
+  g.save(); g.setLineDash(pat); g.lineWidth = w; g.strokeStyle = col; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.restore();
+}
+// molecule site positions in world coordinates
+function place(s, x, y, a) {
+  const c = Math.cos(a), sn = Math.sin(a);
+  return s.site.map(p => ({...p, X: x + p.x * c - p.y * sn, Y: y + p.x * sn + p.y * c}));
+}
+function drawMol(s, x, y, a, k, ox, oy, opt = {}) {
+  const P = place(s, x, y, a);
+  const px = p => ox + p.X * k, py = p => oy + p.Y * k;
+  // ball-and-stick shrinks the atoms so the gaps between molecules show; otherwise space-filling
+  const bs = !!opt.bs, bk = opt.bs || 1, rOf = p => bs ? (p.heavy ? 0.42 : 0.27) * bk : p.rad * 0.92;
+  for (const p of P) p.r = rOf(p);
+  const deco = (s.deco || []).map(([r, d]) => { const an = a + d * C.deg; return {X: x + r * Math.cos(an), Y: y + r * Math.sin(an), r: bs ? 0.27 * bk : C.EL.H[4] * 0.92}; });
+  if (bs) {   // sticks from the central atom
+    g.lineCap = 'round';
+    const c0 = P[0], ends = [...P.slice(1), ...deco];
+    for (const e of ends) { g.strokeStyle = '#5b6577'; g.lineWidth = Math.max(3, 0.16 * k); g.beginPath(); g.moveTo(px(c0), py(c0)); g.lineTo(px(e), py(e)); g.stroke(); }
+  }
+  for (const h of deco) ball(px(h), py(h), h.r * k, S.charge && S.mode !== 'disp' ? chargeCol(0.05) : C.EL.H[3], opt.labels ? 'H' : '');
+  if (opt.lp && s.lp) {   // lone pairs as soft lobes
+    const o = P[0];
+    for (const d of s.lp) {
+      const an = a + d * C.deg, rr = bs ? o.r + 0.3 : o.rad * 1.02, sz = bs ? 0.7 : 1;
+      const cx = px(o) + Math.cos(an) * rr * k, cy = py(o) + Math.sin(an) * rr * k;
+      g.save(); g.translate(cx, cy); g.rotate(an); g.scale(sz, sz);
+      g.beginPath(); g.ellipse(0, 0, 0.62 * k, 0.4 * k, 0, 0, Math.PI * 2);
+      g.fillStyle = 'rgba(255,138,128,.16)'; g.fill(); g.strokeStyle = 'rgba(255,138,128,.45)'; g.lineWidth = 1; g.stroke();
+      g.fillStyle = 'rgba(255,210,200,.9)';
+      for (const e of [-0.17, 0.17]) { g.beginPath(); g.arc(0.12 * k, e * k, Math.max(1.6, 0.075 * k), 0, Math.PI * 2); g.fill(); }
+      g.restore();
+    }
+  }
+  const order = P.map((p, i) => i).sort((i, j) => (P[j].heavy ? 1 : 0) - (P[i].heavy ? 1 : 0));
+  for (const i of order) { const p = P[i]; ball(px(p), py(p), p.r * k, atomFill(p), opt.labels ? sym(p) : ''); }
+  return P;
+}
+function deltaLabels(P, k, ox, oy, scaleOut = 0.3) {
+  for (const p of P) {
+    if (!p.q || Math.abs(p.q) < 0.015) continue;
+    // push the label outward from the molecule centre
+    const cx = P.reduce((a, q) => a + q.X, 0) / P.length, cy = P.reduce((a, q) => a + q.Y, 0) / P.length;
+    let dx = p.X - cx, dy = p.Y - cy, d = Math.hypot(dx, dy);
+    if (d < 1e-3) { dx = 0; dy = -1; d = 1; }
+    const r = (p.r || p.rad) + scaleOut + 0.12;
+    txt(p.q < 0 ? 'δ−' : 'δ+', ox + (p.X + dx / d * r) * k, oy + (p.Y + dy / d * r) * k, p.q < 0 ? '#FF8A80' : '#8FB0FF', Math.max(12, Math.min(17, k * 0.42)), 600);
+  }
+}
+
+/* ===================== close-up views ===================== */
+const PT = {t: 0, hist: [], sum: 0, n: 0, dA: [0, 0], dB: [0, 0], nB: [0, 0], ta: 0.5, tb: 2.4, drag: null, U: 0};
+const HIST = 9;   // seconds of trace
+function gauss() { let u = 0; while (u === 0) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); }
+
+// geometry helpers for the pair
+function halfLen(s) { let m = 0; for (const a of s.site) m = Math.max(m, Math.hypot(a.x, a.y) + a.rad); if (s.deco) m = Math.max(m, 1.09 + C.EL.H[4]); return m; }
+function contact(s) {
+  if (S.mode === 'disp') { const h = s.site.find(a => a.heavy); return Math.pow(2, 1 / 6) * h.sg; }
+  return 2 * halfLen(s) + 0.2;
+}
+const cloudR = s => s.site.find(a => a.heavy).rad * 1.08;
+const ampOf = s => cloudR(s) * (0.08 + 0.09 * Math.cbrt(s.alpha || 1));
+// the second diatomic stands upright in the dispersion close-up (side by side, as they pack)
+const dispAngle = s => s.site.length > 1 ? Math.PI / 2 : 0;
+const muDir = s => {   // angle of the δ+ → δ− direction in the molecule frame
+  let p = s.site[0], n = s.site[0]; for (const a of s.site) { if (a.q > p.q) p = a; if (a.q < n.q) n = a; }
+  return Math.atan2(n.y - p.y, n.x - p.x);
+};
+
+function pairStep(dt) {
+  const s = sub(); PT.t += dt;
+  if (S.mode === 'disp') {
+    const rc = contact(s), r = S.sep * rc, amp = ampOf(s), tau = 0.32;
+    const k1 = Math.exp(-dt / tau), k2 = amp * Math.sqrt(1 - k1 * k1);
+    PT.dA = [PT.dA[0] * k1 + k2 * gauss(), PT.dA[1] * k1 + k2 * gauss()];
+    PT.nB = [PT.nB[0] * k1 + 0.22 * k2 * gauss(), PT.nB[1] * k1 + 0.22 * k2 * gauss()];
+    const gI = 0.85 * Math.pow(rc / r, 3);
+    // axial field of a dipole drags the neighbour's cloud the same way; transverse field the opposite way
+    PT.dB = [gI * PT.dA[0] + PT.nB[0], -0.5 * gI * PT.dA[1] + PT.nB[1]];
+    const shape = (4 * PT.dA[0] ** 2 + PT.dA[1] ** 2) / (5 * amp * amp);
+    PT.U = C.london(s, r) * shape;
+  } else if (S.mode === 'dip') {
+    const r = S.sep * contact(s), RT = C.R_KJ * S.T, D = 1.6;
+    const f = muDir(s), ta = PT.ta + f, tb = PT.tb + f;
+    const sA = Math.sqrt(2 * D * dt), lim = 0.35;
+    const clamp = v => Math.max(-lim, Math.min(lim, v));
+    if (PT.drag !== 'A') PT.ta += clamp(-C.dipdA(s.mu, r, ta, tb) / RT * D * dt + sA * gauss());
+    if (PT.drag !== 'B') PT.tb += clamp(-C.dipdB(s.mu, r, ta, tb) / RT * D * dt + sA * gauss());
+    PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
+  } else {
+    PT.U = 0;
+  }
+  PT.hist.push([PT.t, PT.U]); PT.sum += PT.U; PT.n++;
+  while (PT.hist.length && PT.hist[0][0] < PT.t - HIST) PT.hist.shift();
+}
+function pairReset() { PT.hist = []; PT.sum = 0; PT.n = 0; PT.t = 0; PT.dA = [0, 0]; PT.dB = [0, 0]; PT.nB = [0, 0]; PT.ta = 0.5; PT.tb = 2.4; PT.drag = null; }
+
+// layout: world → screen; keeps the scale fixed for the whole distance range so the slider visibly moves things
+function pairLayout() {
+  const s = sub(), chartH = S.mode === 'hb' ? 0 : Math.min(150, H * 0.26);
+  let span, half;
+  if (S.mode === 'hb') { const hb = s.hb || {xh: 1.2, hb: 2.8}; span = hb.xh + hb.hb + 4.4; half = 2.7; }
+  else { span = 2.5 * contact(s) + 2 * halfLen(s) + 1.2; half = halfLen(s) + 1.2; }
+  const topPad = 92, availH = H - chartH - topPad - 64;
+  const k = Math.max(8, Math.min((W - 60) / span, availH / (2 * half), 120));
+  return {k, cx: W / 2, cy: topPad + availH / 2, chartH};
+}
+
+function drawCloud(cx, cy, rx, ry, rot, d, amp, k) {
+  // electron cloud: soft blob shifted by d; the side it moved toward turns δ− (red), the other δ+ (blue)
+  const ex = cx + d[0] * k, ey = cy + d[1] * k;
+  g.save(); g.translate(ex, ey); g.rotate(rot);
+  const R = Math.max(rx, ry) * k;
+  const base = g.createRadialGradient(0, 0, 0, 0, 0, R * 1.05);
+  base.addColorStop(0, 'rgba(169,193,255,.30)'); base.addColorStop(0.75, 'rgba(169,193,255,.16)'); base.addColorStop(1, 'rgba(169,193,255,0)');
+  g.beginPath(); g.ellipse(0, 0, rx * k * 1.08, ry * k * 1.08, 0, 0, Math.PI * 2); g.fillStyle = base; g.fill();
+  g.restore();
+  const m = Math.hypot(d[0], d[1]);
+  if (m > 1e-4) {
+    const ux = d[0] / m, uy = d[1] / m, a = Math.min(1, m / (1.6 * amp));
+    const L = Math.max(rx, ry) * k;
+    const lin = g.createLinearGradient(ex - ux * L, ey - uy * L, ex + ux * L, ey + uy * L);
+    lin.addColorStop(0, `rgba(92,140,255,${0.6 * a})`); lin.addColorStop(0.5, 'rgba(0,0,0,0)'); lin.addColorStop(1, `rgba(255,107,94,${0.7 * a})`);
+    g.save(); g.translate(ex, ey); g.rotate(rot);
+    g.beginPath(); g.ellipse(0, 0, rx * k * 1.02, ry * k * 1.02, 0, 0, Math.PI * 2); g.restore();
+    g.fillStyle = lin; g.fill();
+  }
+  g.save(); g.translate(ex, ey); g.rotate(rot);
+  g.beginPath(); g.ellipse(0, 0, rx * k, ry * k, 0, 0, Math.PI * 2);
+  g.setLineDash([3, 4]); g.strokeStyle = 'rgba(169,193,255,.45)'; g.lineWidth = 1; g.stroke();
+  g.restore();
+}
+
+function drawPairDisp(L) {
+  const s = sub(), {k, cx, cy} = L, rc = contact(s), r = S.sep * rc, amp = ampOf(s);
+  const xa = cx - r / 2 * k, xb = cx + r / 2 * k, rot = dispAngle(s);
+  const Rc = cloudR(s), bl = s.site.length > 1 ? Math.abs(s.site[1].x - s.site[0].x) : 0;
+  const rx = Rc, ry = Rc + bl / 2;
+  for (const [x, d] of [[xa, PT.dA], [xb, PT.dB]]) {
+    drawCloud(x, cy, s.site.length > 1 ? rx : Rc, s.site.length > 1 ? ry : Rc, 0, d, amp, k);
+    // nuclei and core electrons: small dots
+    for (const p of place(s, 0, 0, rot)) {
+      const X = x + p.X * k, Y = cy + p.Y * k;
+      g.beginPath(); g.arc(X, Y, Math.max(3, 0.18 * k), 0, Math.PI * 2); g.fillStyle = '#F2C46D'; g.fill();
+      txt(sym(p), X, Y - Math.max(12, 0.45 * k), '#E3E6EB', Math.max(11, Math.min(16, 0.38 * k)), 600);
+    }
+  }
+  // δ labels on the x-facing sides, faded by how far the cloud has moved
+  const lab = (x, d, rr) => {
+    const a = Math.min(1, Math.abs(d[0]) / (0.9 * amp)); if (a < 0.15) return;
+    const sgn = Math.sign(d[0]), off = (rr - 0.42) * k;
+    g.globalAlpha = a;
+    txt('δ−', x + sgn * off, cy, '#FF8A80', 16, 600); txt('δ+', x - sgn * off, cy, '#8FB0FF', 16, 600);
+    g.globalAlpha = 1;
+  };
+  lab(xa, PT.dA, rx); lab(xb, PT.dB, rx);
+  // attraction: a pulse between the facing sides, stronger when the dipoles are larger
+  if (S.lines) {
+    const att = Math.min(1, -PT.U / (Math.abs(C.london(s, rc)) * 2.2));
+    if (att > 0.05) { g.globalAlpha = 0.25 + 0.75 * att; dash(xa + (rx + 0.15) * k, cy + ry * k * 0.95 + 14, xb - (rx + 0.15) * k, cy + ry * k * 0.95 + 14, '#FFD27A', 1.5 + 2 * att, [4, 4]); g.globalAlpha = 1; }
+  }
+  const capY = cy + ry * k + 30;
+  const narrow = xb - xa < 170;
+  txt(narrow ? 'Temporary' : 'Instantaneous dipole', xa, capY, '#8A93A1', 12.5); txt(narrow ? 'Induced' : 'Induced dipole', xb, capY, '#8A93A1', 12.5);
+  txt(`r = ${r.toFixed(2)} Å`, cx, cy - ry * k - 20, '#8A93A1', 12, 500);
+}
+
+function dipoleArrow(P, s, k, ox, oy) {
+  if (s.mu < 0.3) return;
+  let p = P[0], n = P[0]; for (const a of P) { if (a.q > p.q) p = a; if (a.q < n.q) n = a; }
+  const dx = n.X - p.X, dy = n.Y - p.Y, d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d, nx = -uy, ny = ux;
+  const len = Math.max(1.2, d + 0.6), mx = (p.X + n.X) / 2, my = (p.Y + n.Y) / 2;
+  const off = Math.max(...P.map(a => a.rad)) + 0.5;
+  const x1 = ox + (mx - ux * len / 2 + nx * off) * k, y1 = oy + (my - uy * len / 2 + ny * off) * k;
+  const x2 = ox + (mx + ux * len / 2 + nx * off) * k, y2 = oy + (my + uy * len / 2 + ny * off) * k;
+  g.strokeStyle = '#E3E6EB'; g.fillStyle = '#E3E6EB'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2 - ux * 8, y2 - uy * 8); g.stroke();
+  g.beginPath(); g.moveTo(x2, y2); g.lineTo(x2 - ux * 10 + nx * 5, y2 - uy * 10 + ny * 5); g.lineTo(x2 - ux * 10 - nx * 5, y2 - uy * 10 - ny * 5); g.closePath(); g.fill();
+  // the cross on the δ+ tail
+  const tx = x1 + ux * 7, ty = y1 + uy * 7;
+  g.beginPath(); g.moveTo(tx + nx * 5, ty + ny * 5); g.lineTo(tx - nx * 5, ty - ny * 5); g.stroke();
+}
+
+function drawPairDip(L) {
+  const s = sub(), {k, cx, cy} = L, r = S.sep * contact(s);
+  const xa = -r / 2, xb = r / 2;
+  const PA = drawMol(s, xa, 0, PT.ta, k, cx, cy, {labels: true});
+  const PB = drawMol(s, xb, 0, PT.tb, k, cx, cy, {labels: true});
+  for (const [P] of [[PA], [PB]]) { if (s.mu > 0.05) deltaLabels(P, k, cx, cy); dipoleArrow(P, s, k, cx, cy); }
+  if (S.lines && s.mu > 0.05) {
+    // line between the closest pair of opposite ends; amber when attracting, red when repelling
+    const ends = P => { let p = P[0], n = P[0]; for (const a of P) { if (a.q > p.q) p = a; if (a.q < n.q) n = a; } return [p, n]; };
+    const [pa, na] = ends(PA), [pb, nb] = ends(PB);
+    const Umax = 2 * C.KD * s.mu * s.mu / r ** 3, rel = PT.U / Umax;
+    let A, B;
+    const c1 = Math.hypot(pa.X - nb.X, pa.Y - nb.Y), c2 = Math.hypot(na.X - pb.X, na.Y - pb.Y);
+    if (rel < 0) { [A, B] = c1 < c2 ? [pa, nb] : [na, pb]; }
+    else { const c3 = Math.hypot(pa.X - pb.X, pa.Y - pb.Y), c4 = Math.hypot(na.X - nb.X, na.Y - nb.Y); [A, B] = c3 < c4 ? [pa, pb] : [na, nb]; }
+    const a = Math.min(1, Math.abs(rel) * 1.4);
+    if (a > 0.08) { g.globalAlpha = 0.2 + 0.8 * a; dash(cx + A.X * k, cy + A.Y * k, cx + B.X * k, cy + B.Y * k, rel < 0 ? '#FFD27A' : '#FF8A80', 1.5 + 2 * a, [4, 4]); g.globalAlpha = 1; }
+  }
+  const capY = cy + halfLen(s) * k + 30;
+  txt(PT.drag ? 'Dragging — release to let it tumble' : 'Drag a molecule to turn it', cx, capY, '#8A93A1', 12.5);
+  if (s.mu < 0.05) txt('No permanent dipole: only London dispersion acts', cx, capY + 20, '#FFD27A', 12.5);
+  else if (s.mu < 0.3) txt('Very small dipole: dipole–dipole attraction is almost nothing', cx, capY + 20, '#FFD27A', 12.5);
+}
+
+function drawPairHB(L) {
+  const s = sub(), {k, cx, cy} = L, hb = s.hb;
+  const hS = s.site.find(a => a.t === 'H');
+  const xh = hb ? hb.xh : hS ? Math.hypot(hS.x - s.site[0].x, hS.y - s.site[0].y) : 1.09;
+  const sep = hb ? hb.hb : (s.id === 'CH4' ? 4.0 - 1.09 : 4.0 - xh);
+  const wob = calm || !playing ? 0 : 0.06 * Math.sin(PT.t * 2.3);
+  // donor: its first H points along +x; acceptor: a lone pair points back along −x
+  const s0 = s.site[0], h = s.site.find(a => a.t === 'H');
+  const rotD = h ? -Math.atan2(h.y - s0.y, h.x - s0.x) : 0;
+  const lp0 = s.lp ? s.lp[0] * C.deg : Math.PI;
+  const rotA = Math.PI - lp0;
+  const dX = xh + sep + wob, x0 = -dX / 2;
+  // molecules are placed by their first (heavy) atom
+  const offD = rotPt(s0.x, s0.y, rotD), offA = rotPt(s0.x, s0.y, rotA);
+  const PD = drawMol(s, x0 - offD[0], -offD[1], rotD, k, cx, cy, {labels: true, lp: true, bs: true});
+  const PA = drawMol(s, x0 + dX - offA[0], -offA[1], rotA, k, cx, cy, {labels: true, lp: true, bs: true});
+  if (S.charge) { deltaLabels(PD, k, cx, cy, 0.05); deltaLabels(PA, k, cx, cy, 0.05); }
+  const H1 = PD.find(a => a.t === 'H'), XD = PD[0], XA = PA[0];
+  const hx = cx + (H1 ? H1.X : XD.X + xh) * k, hy = cy + (H1 ? H1.Y : 0) * k;
+  const ax = cx + XA.X * k, ay = cy + XA.Y * k;
+  const ok = !!hb;
+  const hr = 0.27 * k, tgtX = ax - XA.r * k;
+  if (S.lines) {
+    if (ok) {
+      const pulse = calm ? 1 : 0.75 + 0.25 * Math.sin(PT.t * 4);
+      g.globalAlpha = pulse; dash(hx + hr + 3, hy, tgtX - 3, ay, '#FFD27A', 3, [6, 5]); g.globalAlpha = 1;
+    } else if (s.id === 'H2S') dash(hx + hr + 3, hy, tgtX - 3, ay, 'rgba(138,147,161,.6)', 1.5, [3, 5]);
+  }
+  const xD = cx + XD.X * k;
+  const bracket = (x1, x2, y, c, up) => { const d = up ? 6 : -6; g.strokeStyle = c; g.lineWidth = 1; g.beginPath(); g.moveTo(x1, y + d); g.lineTo(x1, y); g.lineTo(x2, y); g.lineTo(x2, y + d); g.stroke(); };
+  if (ok) {
+    // covalent bond labelled below it, hydrogen bond above it
+    const yb = cy + 0.95 * k + 8, ya = cy - 0.95 * k - 8;
+    bracket(xD, hx, yb, '#5b6577', false);
+    txt(`${hb.cov_name} ${hb.xh.toFixed(2)} Å`, (xD + hx) / 2, yb + 16, '#E3E6EB', 13, 600, 'center');
+    txt(`covalent · ${hb.cov} kJ/mol`, (xD + hx) / 2, yb + 34, '#8A93A1', 12);
+    bracket(hx, ax, ya, '#7a6a45', true);
+    txt(`H···${XA.t} ${(hb.hb + wob).toFixed(2)} Å`, (hx + ax) / 2, ya - 32, '#FFD27A', 13, 600);
+    txt(`hydrogen bond · ≈${hb.e} kJ/mol`, (hx + ax) / 2, ya - 14, '#8A93A1', 12);
+    const yl = Math.max(cy + 2.15 * k, yb + 58);
+    txt('Donor', xD, yl, '#8A93A1', 12.5);
+    txt('Acceptor', ax, yl, '#8A93A1', 12.5);
+  } else {
+    const msg = s.id === 'H2S' ? 'S is not electronegative enough: no hydrogen bond, only weak dipole–dipole + dispersion'
+      : 'No N–H, O–H or F–H bond and no polar bonds: dispersion only';
+    txt(msg, cx, cy + 2.2 * k, '#FFD27A', 12.5);
+  }
+}
+const rotPt = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+
+function drawChart(L) {
+  if (S.mode === 'hb' || !L.chartH) return;
+  const s = sub(), x0 = 56, x1 = W - 24, y0 = H - L.chartH - 40, y1 = H - 66;
+  const disp = S.mode === 'disp';
+  const rc = contact(s);
+  // attraction plotted upward; scale fixed per substance so moving apart visibly shrinks the trace
+  const top = disp ? Math.abs(C.london(s, rc)) * 3.2 : Math.max(0.6, 2.4 * C.KD * s.mu * s.mu / rc ** 3);
+  const bottom = disp ? 0 : -top * 0.5;
+  const yOf = v => y1 - (v - bottom) / (top - bottom) * (y1 - y0);
+  g.fillStyle = 'rgba(10,13,18,.55)'; g.strokeStyle = '#252C37'; g.lineWidth = 1;
+  g.beginPath(); g.roundRect ? g.roundRect(x0 - 46, y0 - 22, x1 - x0 + 58, y1 - y0 + 42, 8) : g.rect(x0 - 46, y0 - 22, x1 - x0 + 58, y1 - y0 + 42); g.fill(); g.stroke();
+  txt(disp ? 'Attraction between the pair, kJ/mol' : 'Attraction (+) / repulsion (−) between the pair, kJ/mol', x0 - 38, y0 - 10, '#8A93A1', 11.5, 500, 'left');
+  // zero and RT lines
+  g.strokeStyle = '#3a4352'; g.beginPath(); g.moveTo(x0, yOf(0)); g.lineTo(x1, yOf(0)); g.stroke();
+  txt('0', x0 - 8, yOf(0), '#8A93A1', 11, 500, 'right');
+  txt(top.toFixed(top < 1 ? 2 : 1), x0 - 8, y0, '#8A93A1', 11, 500, 'right');
+  if (!disp) {
+    const RT = C.R_KJ * S.T;
+    if (RT < top) { dash(x0, yOf(RT), x1, yOf(RT), 'rgba(169,193,255,.45)', 1, [2, 4]); txt('RT', x1 - 4, yOf(RT) - 8, '#A9C1FF', 11, 500, 'right'); }
+  }
+  if (PT.hist.length > 1) {
+    const tEnd = PT.t, xOf = t => x1 - (tEnd - t) / HIST * (x1 - x0);
+    g.beginPath();
+    PT.hist.forEach(([t, u], i) => { const X = xOf(t), Y = yOf(Math.max(bottom, Math.min(top, -u))); i ? g.lineTo(X, Y) : g.moveTo(X, Y); });
+    g.strokeStyle = '#FFD27A'; g.lineWidth = 1.6; g.stroke();
+    const avg = -PT.sum / Math.max(1, PT.n);
+    dash(x0, yOf(Math.max(bottom, Math.min(top, avg))), x1, yOf(Math.max(bottom, Math.min(top, avg))), '#E3E6EB', 1, [6, 4]);
+    txt(`average ${avg >= 0 ? '' : MINUS}${Math.abs(avg).toFixed(avg < 1 && avg > -1 ? 2 : 1)}`, x0 + 6, yOf(Math.max(bottom, Math.min(top, avg))) - 9, '#E3E6EB', 11, 500, 'left');
+  }
+}
+
+/* ===================== many-molecule view ===================== */
+let sim = null, simKey = '', ana = null, clouds = [], own = [];
+function ensureSim(force) {
+  const key = S.sub[S.mode];
+  if (!force && sim && simKey === key) return;
+  // start as a droplet when it should be condensed, spread out when it should be a gas, then let it settle briefly
+  sim = C.Sim(sub(), 32, (Math.random() * 1e9) | 0, S.T < 1.05 * sub().bp); simKey = key; sim.T = S.T;
+  sim.thermal(S.T);
+  sim.advance(6);
+  clouds = sim.mol.map(() => [0, 0]); own = sim.mol.map(() => [0, 0]);
+  ana = sim.analyse();
+}
+function manyLayout() {
+  const pad = 22, top = 80, k = Math.min((W - 2 * pad) / sim.L, (H - top - pad) / sim.L);
+  return {k, ox: (W - sim.L * k) / 2, oy: top + (H - top - pad - sim.L * k) / 2};
+}
+function manyStep(dt) {
+  sim.T = S.T;
+  sim.advance(dt * 1.1 * SPEED[S.speed]);
+  ana = sim.analyse();
+  if (S.mode === 'disp') {   // flickering clouds: random part + a share induced by close neighbours
+    const s = sub(), amp = ampOf(s) * 1.1, k1 = Math.exp(-dt / 0.3), k2 = amp * Math.sqrt(1 - k1 * k1);
+    own = own.map(c => [c[0] * k1 + k2 * gauss(), c[1] * k1 + k2 * gauss()]);   // random part only, so the induced part cannot feed back
+    const lim = 1.6 * sim.r0;
+    clouds = own.map((c, i) => {
+      let x = c[0], y = c[1]; const A = sim.mol[i];
+      sim.mol.forEach((B, j) => {
+        if (j === i) return;
+        const dx = A.x - B.x, dy = A.y - B.y, d = Math.hypot(dx, dy); if (d > lim) return;
+        const ux = dx / d, uy = dy / d, gI = 0.35 * (sim.r0 / d) ** 3, o = own[j];
+        const along = o[0] * ux + o[1] * uy;   // E ∝ 3(p·u)u − p, response same sense along the axis
+        x += gI * (3 * along * ux - o[0]) / 2; y += gI * (3 * along * uy - o[1]) / 2;
+      });
+      return [x, y];
+    });
+  }
+}
+function drawMany() {
+  const s = sub(), {k, ox, oy} = manyLayout();
+  g.strokeStyle = '#252C37'; g.lineWidth = 1; g.strokeRect(ox, oy, sim.L * k, sim.L * k);
+  const P = sim.mol.map(m => place(s, m.x, m.y, m.a));
+  if (S.mode === 'hb') for (const Q of P) for (const p of Q) p.r = (p.heavy ? 0.42 : 0.27) * 1.3;
+  if (S.mode === 'disp') {
+    const amp = ampOf(s) * 1.1;
+    sim.mol.forEach((m, i) => {
+      const bl = s.site.length > 1 ? Math.abs(s.site[1].x - s.site[0].x) : 0, R = cloudR(s);
+      drawCloudRot(ox + m.x * k, oy + m.y * k, R + bl / 2, R, m.a, clouds[i], amp, k);
+    });
+  }
+  for (let i = 0; i < sim.mol.length; i++) {
+    const m = sim.mol[i];
+    if (S.mode === 'disp') {
+      for (const p of P[i]) { g.beginPath(); g.arc(ox + p.X * k, oy + p.Y * k, Math.max(2, 0.2 * k), 0, Math.PI * 2); g.fillStyle = '#F2C46D'; g.fill(); }
+    } else drawMol(s, m.x, m.y, m.a, k, ox, oy, {labels: k > 16, bs: S.mode === 'hb' ? 1.3 : 0});
+  }
+  if (S.lines && ana) {
+    if (S.mode === 'hb') for (const [i, h, j, a] of ana.hb) {
+      const H1 = P[i][h], A = P[j][a];
+      const ux = A.X - H1.X, uy = A.Y - H1.Y, d = Math.hypot(ux, uy);
+      const r1 = H1.r || 0.35, r2 = A.r || 0.55;
+      if (d > r1 + r2) dash(ox + (H1.X + ux / d * r1) * k, oy + (H1.Y + uy / d * r1) * k, ox + (A.X - ux / d * r2) * k, oy + (A.Y - uy / d * r2) * k, '#FFD27A', 2.2, [4, 3]);
+      else { g.beginPath(); g.arc(ox + (H1.X + A.X) / 2 * k, oy + (H1.Y + A.Y) / 2 * k, 2.5, 0, 7); g.fillStyle = '#FFD27A'; g.fill(); }
+    }
+    if (S.mode === 'dip') for (const [i, p, j, n] of ana.dd) {
+      const A = P[i][p], B = P[j][n];
+      g.beginPath(); g.moveTo(ox + A.X * k, oy + A.Y * k); g.lineTo(ox + B.X * k, oy + B.Y * k);
+      g.strokeStyle = 'rgba(255,210,122,.75)'; g.lineWidth = 2; g.setLineDash([3, 3]); g.stroke(); g.setLineDash([]);
+    }
+  }
+}
+function drawCloudRot(x, y, rx, ry, a, d, amp, k) {
+  // like drawCloud, but for a cloud rotated with its molecule
+  const ex = x + d[0] * k, ey = y + d[1] * k;
+  const m = Math.hypot(d[0], d[1]), al = Math.min(1, m / (1.6 * amp));
+  g.save(); g.translate(ex, ey); g.rotate(a);
+  g.beginPath(); g.ellipse(0, 0, rx * k, ry * k, 0, 0, Math.PI * 2); g.restore();
+  g.fillStyle = 'rgba(169,193,255,.14)'; g.fill();
+  if (m > 1e-4) {
+    const ux = d[0] / m, uy = d[1] / m, L = Math.max(rx, ry) * k;
+    const lin = g.createLinearGradient(ex - ux * L, ey - uy * L, ex + ux * L, ey + uy * L);
+    lin.addColorStop(0, `rgba(92,140,255,${0.5 * al})`); lin.addColorStop(0.5, 'rgba(0,0,0,0)'); lin.addColorStop(1, `rgba(255,107,94,${0.55 * al})`);
+    g.fillStyle = lin; g.fill();
+  }
+  g.strokeStyle = 'rgba(169,193,255,.35)'; g.lineWidth = 1; g.stroke();
+}
+
+/* ===================== frame loop ===================== */
+let panelTick = 0;
+function frame(now) {
+  raf = 0;
+  if (!$('#iApp') || $('#iApp').hidden) return;
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now;
+  if (playing) {
+    if (S.view === 'pair') pairStep(dt * SPEED[S.speed]);
+    else { ensureSim(); manyStep(dt); }
+  }
+  draw();
+  if ((panelTick += dt) > 0.2) { panelTick = 0; renderLive(); }
+  raf = requestAnimationFrame(frame);
+}
+function draw() {
+  if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  if (S.view === 'pair') {
+    const L = pairLayout();
+    if (S.mode === 'disp') drawPairDisp(L); else if (S.mode === 'dip') drawPairDip(L); else drawPairHB(L);
+    drawChart(L);
+  } else { ensureSim(); drawMany(); }
+}
+
+/* ===================== panel ===================== */
+function fmtF(s) { return s.f; }
+const BP_SETS = {
+  disp: [{h: 'Noble gases', ids: ['He', 'Ne', 'Ar', 'Kr', 'Xe']}, {h: 'Halogens', ids: ['F2', 'Cl2', 'Br2', 'I2']}],
+  dip: [{h: 'Similar molar mass — nonpolar vs polar', pairs: [['N2', 'CO'], ['F2', 'HCl'], ['Br2', 'ICl']]}]
+};
+// boiling points (K) of the group 14–17 hydrides, periods 2–5
+const HYD = [
+  {g: 'Group 14', c: '#8E96A3', pts: [['CH₄', 111.7, 'CH4'], ['SiH₄', 161], ['GeH₄', 185], ['SnH₄', 221]]},
+  {g: 'Group 15', c: '#7C9BFF', pts: [['NH₃', 239.8, 'NH3'], ['PH₃', 185.4], ['AsH₃', 210.7], ['SbH₃', 255]]},
+  {g: 'Group 16', c: '#FF7E73', pts: [['H₂O', 373.15, 'H2O'], ['H₂S', 212.9, 'H2S'], ['H₂Se', 231.9], ['H₂Te', 271]]},
+  {g: 'Group 17', c: '#8FD36A', pts: [['HF', 292.7, 'HF'], ['HCl', 188.1], ['HBr', 206.8], ['HI', 237.6]]}
+];
+function bpBar(id, max) {
+  const s = SUB[id], on = id === S.sub[S.mode];
+  return `<button type="button" class="ibar${on ? ' on' : ''}" data-id="${id}" aria-pressed="${on}"><span class="ibl">${fmtF(s)}</span><span class="ibt"><i style="width:${(s.bp / max * 100).toFixed(1)}%"></i></span><span class="ibv">${Math.round(s.bp)} K</span><small>${s.M.toFixed(0)} g/mol</small></button>`;
+}
+function renderBp() {
+  const el = $('#iBp');
+  if (S.mode === 'hb') {
+    $('#iBpH').textContent = 'Boiling points of the hydrides';
+    const w = 320, h = 210, l = 38, r = 30, t = 12, b = 30;
+    const X = i => l + i * (w - l - r) / 3, Y = v => t + (1 - (v - 50) / 350) * (h - t - b);
+    let svg = `<svg class="ihyd" viewBox="0 0 ${w} ${h}" role="img" aria-label="Boiling points of group 14 to 17 hydrides by period">`;
+    for (const v of [100, 200, 300, 400]) svg += `<line x1="${l}" x2="${w - r}" y1="${Y(v)}" y2="${Y(v)}" class="gl"/><text x="${l - 6}" y="${Y(v) + 4}" class="ax" text-anchor="end">${v}</text>`;
+    const rt = Y(298); svg += `<line x1="${l}" x2="${w - r}" y1="${rt}" y2="${rt}" class="rt"/><text x="${w - r}" y="${rt - 4}" class="ax" text-anchor="end">25 °C</text>`;
+    ['2', '3', '4', '5'].forEach((p, i) => svg += `<text x="${X(i)}" y="${h - 12}" class="ax" text-anchor="middle">Period ${p}</text>`);
+    for (const s of HYD) {
+      svg += `<polyline points="${s.pts.map((p, i) => `${X(i)},${Y(p[1])}`).join(' ')}" fill="none" stroke="${s.c}" stroke-width="1.8"/>`;
+      s.pts.forEach((p, i) => {
+        const on = p[2] && p[2] === S.sub.hb;
+        svg += `<circle cx="${X(i)}" cy="${Y(p[1])}" r="${on ? 6 : 3.5}" fill="${s.c}"${on ? ' stroke="#fff" stroke-width="2"' : ''}${p[2] ? ` data-id="${p[2]}" class="pick"` : ''}><title>${p[0]}: ${p[1]} K</title></circle>`;
+        if (i === 0 || on) svg += `<text x="${X(i) + (i === 0 ? 9 : 0)}" y="${Y(p[1]) + (i === 0 ? 4 : -10)}" class="lb" fill="${s.c}" text-anchor="${i === 0 ? 'start' : 'middle'}">${p[0]}</text>`;
+      });
+    }
+    svg += '</svg>';
+    el.innerHTML = svg + `<div class="ileg">${HYD.map(s => `<span><i style="background:${s.c}"></i>${s.g}</span>`).join('')}</div><p class="ecap" style="margin:8px 0 0">Down each group the boiling point rises with size (more dispersion). NH<sub>3</sub>, H<sub>2</sub>O and HF break the trend: hydrogen bonding holds them together far more strongly than their mass predicts.</p>`;
+  } else if (S.mode === 'disp') {
+    $('#iBpH').textContent = 'Boiling point rises with size';
+    const max = 460;
+    el.innerHTML = BP_SETS.disp.map(gp => `<div class="ibgrp"><h3>${gp.h}</h3>${gp.ids.map(id => bpBar(id, max)).join('')}</div>`).join('') +
+      '<p class="ecap" style="margin:8px 0 0">All nonpolar, so dispersion is the only attraction. More electrons in a bigger, looser cloud → higher polarizability → stronger attraction → higher boiling point.</p>';
+  } else {
+    $('#iBpH').textContent = 'Same mass, add a dipole';
+    const max = 400;
+    el.innerHTML = BP_SETS.dip[0].pairs.map(([a, b]) => `<div class="ibgrp">${bpBar(a, max)}${bpBar(b, max)}</div>`).join('') +
+      '<p class="ecap" style="margin:8px 0 0">Within each pair the molar masses, and so the dispersion forces, are about the same. The polar molecule boils higher because dipole–dipole attraction is added on top. CO’s dipole is tiny, so it barely gains.</p>';
+  }
+}
+function forcesOf(s) { return {disp: true, dip: s.mu > 0.05, hb: !!s.hb}; }
+function renderPanel() {
+  const s = sub(), M = MODES[S.mode];
+  document.querySelectorAll('#iMode button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.m === S.mode)));
+  document.querySelectorAll('#iView button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === S.view)));
+  document.querySelectorAll('#iSpeed button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === S.speed)));
+  $('#iLead').innerHTML = M.lead;
+  $('#iSubs').innerHTML = M.subs.map(id => { const t = SUB[id]; return `<button type="button" role="radio" data-id="${id}" aria-checked="${id === s.id}">${t.name}<small>${t.f} · ${Math.round(t.bp)} K</small></button>`; }).join('');
+  $('#iTitle').innerHTML = `${esc(s.name)} <span class="ifm">${s.f}</span>`;
+  $('#iSub').innerHTML = `<b>${M.name}</b> · ${S.view === 'pair' ? 'close-up of two molecules' : '32 molecules'}`;
+  const f = forcesOf(s);
+  $('#iForces').innerHTML = [['disp', 'London dispersion'], ['dip', 'Dipole–dipole'], ['hb', 'Hydrogen bonding']]
+    .map(([k, n]) => `<span class="${f[k] ? 'y' : 'n'}">${f[k] ? '✓' : '✕'} ${n}</span>`).join('');
+  $('#iT').value = t2s(S.T); $('#iTOut').textContent = fmtT(S.T);
+  $('#iSep').value = S.sep;
+  $('#iSepRow').hidden = S.view !== 'pair' || S.mode === 'hb';
+  $('#iTRow').hidden = S.view === 'pair' && S.mode !== 'dip';
+  $('#iCharge').checked = S.charge; $('#iLines').checked = S.lines;
+  $('#iCharge').closest('.sw').hidden = S.mode === 'disp';
+  $('#iPlay').textContent = playing ? 'Pause' : 'Play';
+  $('#iReset').hidden = S.view !== 'many';
+  $('#iHow').innerHTML = M.how;
+  $('#iSim').innerHTML = SIM_NOTE; $('#iSim').hidden = S.view !== 'many';
+  $('#iLegend').innerHTML = S.mode === 'disp'
+    ? '<span><i style="background:#FF6B5E"></i>δ− (electrons piled up)</span><span><i style="background:#5C8CFF"></i>δ+</span>'
+    : S.charge ? '<span><i style="background:#FF6B5E"></i>δ−</span><span><i style="background:#5C8CFF"></i>δ+</span><span><i style="background:#FFD27A"></i>' + (S.mode === 'hb' ? 'hydrogen bond' : 'attraction') + '</span>'
+    : '<span><i style="background:#FFD27A"></i>' + (S.mode === 'hb' ? 'hydrogen bond' : 'attraction') + '</span>';
+  renderBp(); renderLive();
+}
+function renderLive() {
+  const s = sub(), rows = [];
+  rows.push(['Molar mass', `${s.M.toFixed(2)} g/mol`]);
+  rows.push(['Dipole moment μ', s.mu ? `${s.mu.toFixed(2)} D` : '0 (nonpolar)']);
+  if (s.alpha) rows.push(['Polarizability α', `${s.alpha.toFixed(2)} Å³<small>volume of the easily shifted electron cloud</small>`]);
+  rows.push(['Boiling point', `${(s.bp + 1e-9).toFixed(1)} K<small>${num(s.bp - 273.15 + 1e-9, 1)} °C</small>`]);
+  if (S.view === 'pair') {
+    if (S.mode === 'disp') {
+      const rc = contact(s), r = S.sep * rc, U = C.london(s, r);
+      rows.push(['Distance', `${r.toFixed(2)} Å<small>${S.sep.toFixed(2)} × contact distance</small>`]);
+      $('#iSepOut').textContent = `${r.toFixed(2)} Å`;
+      rows.push(['Average attraction', `${num(U, U > -0.1 ? 3 : 2)} kJ/mol<small>${(Math.pow(1 / S.sep, 6) * 100).toFixed(S.sep > 1.6 ? 1 : 0)} % of the value at contact (∝ 1/r⁶)</small>`]);
+    } else if (S.mode === 'dip') {
+      const r = S.sep * contact(s), Ud = C.london(s, r), RT = C.R_KJ * S.T;
+      $('#iSepOut').textContent = `${r.toFixed(2)} Å`;
+      const avg = PT.sum / Math.max(1, PT.n);
+      rows.push(['Dipole–dipole now', `${num(PT.U, 2)} kJ/mol<small>${PT.U < -0.01 ? 'attracting' : PT.U > 0.01 ? 'repelling' : '—'} · average ${num(avg, 2)}</small>`]);
+      if (Ud) rows.push(['Dispersion (average)', `${num(Ud, 2)} kJ/mol`]);
+      rows.push(['Thermal energy RT', `${RT.toFixed(2)} kJ/mol<small>when RT is large the tumbling wins and the lineup is lost</small>`]);
+    } else if (s.hb) {
+      rows.push(['Hydrogen bond', `≈ ${s.hb.e} kJ/mol<small>${s.hb.cov_name} covalent bond: ${s.hb.cov} kJ/mol (${Math.round(s.hb.cov / s.hb.e)}× stronger)</small>`]);
+    }
+  } else if (sim && ana) {
+    const fr = ana.frac;
+    rows.push(['Temperature', `${fmtT(S.T)}<small>${(S.T / s.bp).toFixed(2)} × its boiling point</small>`]);
+    rows.push(['In clusters', `${Math.round(fr * 100)} % of molecules`]);
+    if (S.mode === 'hb' && s.hb) rows.push(['Hydrogen bonds', `${ana.hb.length}<small>${(2 * ana.hb.length / sim.n).toFixed(1)} per molecule</small>`]);
+  }
+  $('#iRead').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  // status chip
+  let st = '';
+  if (S.view === 'many' && ana) {
+    st = ana.frac > 0.65 ? 'Mostly clustered — liquid-like' : ana.frac < 0.3 ? 'Mostly apart — gas-like' : 'Clusters form and break up — near boiling';
+  } else if (S.mode === 'disp') st = 'Temporary dipole → induced dipole';
+  else if (S.mode === 'dip') st = s.mu < 0.05 ? 'Nonpolar: no dipole–dipole force' : PT.U < -0.01 ? 'Attracting' : PT.U > 0.01 ? 'Repelling' : '—';
+  else st = s.hb ? `${s.hb.cov_name}···${s.site[0].t} hydrogen bond` : 'No hydrogen bond';
+  $('#iPhase').textContent = st;
+}
+
+/* ---------- events ---------- */
+function setMode(m) { S.mode = m; pairReset(); save(); renderPanel(); draw(); }
+function setSub(id) {
+  if (!MODES[S.mode].subs.includes(id)) { const m = Object.keys(MODES).find(k => MODES[k].subs.includes(id)); if (!m) return; S.mode = m; }
+  S.sub[S.mode] = id; pairReset(); save(); renderPanel(); draw();
+}
+function setT(T) { S.T = Math.min(600, Math.max(2, T)); PT.sum = 0; PT.n = 0; if (sim) sim.T = S.T; save(); $('#iT').value = t2s(S.T); $('#iTOut').textContent = fmtT(S.T); renderLive(); }
+function bind() {
+  cv = $('#iCanvas'); g = cv.getContext('2d');
+  $('#iMode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.m); });
+  $('#iView').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.view = b.dataset.v; save(); renderPanel(); draw(); });
+  $('#iSubs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setSub(b.dataset.id); });
+  $('#iBp').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) setSub(b.dataset.id); });
+  $('#iSpeed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.speed = b.dataset.s; save(); renderPanel(); });
+  $('#iSep').addEventListener('input', e => { S.sep = +e.target.value; PT.hist = []; PT.sum = 0; PT.n = 0; save(); renderLive(); draw(); });
+  $('#iT').addEventListener('input', e => setT(s2t(+e.target.value)));
+  document.querySelectorAll('#iTRow .bulk button').forEach(b => b.addEventListener('click', () => setT(b.dataset.t === 'bp' ? sub().bp : +b.dataset.t)));
+  $('#iCharge').addEventListener('change', e => { S.charge = e.target.checked; save(); renderPanel(); draw(); });
+  $('#iLines').addEventListener('change', e => { S.lines = e.target.checked; save(); draw(); });
+  $('#iPlay').addEventListener('click', () => { playing = !playing; renderPanel(); });
+  $('#iReset').addEventListener('click', () => { ensureSim(true); draw(); renderLive(); });
+  // drag to turn a molecule in the dipole close-up
+  let grab = null;
+  cv.addEventListener('pointerdown', e => {
+    if (S.view !== 'pair' || S.mode !== 'dip') return;
+    const s = sub(), L = pairLayout(), r = S.sep * contact(s), rect = cv.getBoundingClientRect();
+    const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
+    for (const [id, mx] of [['A', -r / 2], ['B', r / 2]]) {
+      if (Math.hypot(x - mx, y) < halfLen(s) + 0.4) {
+        grab = {id, mx, a0: Math.atan2(y, x - mx), t0: id === 'A' ? PT.ta : PT.tb};
+        PT.drag = id; cv.setPointerCapture(e.pointerId); e.preventDefault(); draw(); return;
+      }
+    }
+  });
+  cv.addEventListener('pointermove', e => {
+    const s = sub();
+    if (!grab) {
+      if (S.view === 'pair' && S.mode === 'dip') {
+        const L = pairLayout(), r = S.sep * contact(s), rect = cv.getBoundingClientRect();
+        const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
+        cv.style.cursor = Math.min(Math.hypot(x + r / 2, y), Math.hypot(x - r / 2, y)) < halfLen(s) + 0.4 ? 'grab' : '';
+      } else cv.style.cursor = '';
+      return;
+    }
+    const L = pairLayout(), rect = cv.getBoundingClientRect();
+    const x = (e.clientX - rect.left - L.cx) / L.k, y = (e.clientY - rect.top - L.cy) / L.k;
+    const a = grab.t0 + Math.atan2(y, x - grab.mx) - grab.a0;
+    if (grab.id === 'A') PT.ta = a; else PT.tb = a;
+    const r = S.sep * contact(s), f = muDir(s);
+    PT.U = C.dipE(s.mu, r, PT.ta + f, PT.tb + f);
+    if (!playing) draw();
+  });
+  const drop = () => { if (grab) { grab = null; PT.drag = null; cv.style.cursor = ''; } };
+  cv.addEventListener('pointerup', drop); cv.addEventListener('pointercancel', drop);
+  new ResizeObserver(resize).observe($('#iViewer'));
+}
+window.initIMF = function () {
+  if (!inited) { inited = true; bind(); renderPanel(); }
+  resize();
+  if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+};
+})();
+</script>
 <script>
 /* ---------- site map + router ----------
    One registry drives the header nav, the home page and routing.
@@ -6439,6 +7522,11 @@ window.initMO = function () {
       {id: 'mo', app: '#mApp', nav: 'MO theory', title: 'Molecular Orbital Theory', init: () => window.initMO(),
        desc: 'MO energy diagrams for two identical atoms — set the valence electrons yourself or pick H₂ to Ne₂ and their ions — fill the levels, read off bond order and magnetism, and see each bonding and antibonding orbital in 3D.',
        tags: ['Bond order', 'Paramagnetism', 'Bonding / antibonding']}
+    ]},
+    {name: 'Intermolecular forces', blurb: 'What holds molecules to each other', pages: [
+      {id: 'imf', app: '#iApp', nav: 'Dispersion · dipole · H-bond', title: 'Intermolecular Forces', init: () => window.initIMF(),
+       desc: 'Watch London dispersion, dipole–dipole attraction and hydrogen bonding up close, then simulate many molecules to see which substances condense at a given temperature.',
+       tags: ['Induced dipoles', 'Polar molecules', 'H-bonds & boiling points']}
     ]},
     {name: 'Thermochemistry', blurb: 'Measuring the heat of a reaction', pages: [
       {id: 'calorimeter', app: '#cApp', nav: 'Bomb calorimeter', title: 'Bomb Calorimeter', init: () => window.initCalorimeter(),
