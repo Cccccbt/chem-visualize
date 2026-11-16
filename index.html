@@ -7404,7 +7404,8 @@ function molExt(s) {   // half-widths of the molecule in its own frame, for its 
 }
 function drawPairAll(L) {
   const s = sub(), {k, cx, cy} = L, P = allPlace(s), Ly = S.layers;
-  const wob = calm || !playing ? 0 : 0.05 * Math.sin(PT.t * 2.3);
+  // thermal jiggle fades to a tiny zero-point vibration at 0 K
+  const wob = calm || !playing ? 0 : (0.008 + 0.05 * Math.sqrt(Math.min(S.T, 600) / 298)) * Math.sin(PT.t * 2.3);
   const A = {...P.A, x: P.A.x - wob / 2}, B = {...P.B, x: P.B.x + wob / 2};
   const has = forcesOf(s);
   // L: electron clouds that flicker; the right one follows the left one
@@ -7716,6 +7717,8 @@ function renderLive() {
     rows.push(['In clusters', `${Math.round(fr * 100)} % of molecules`]);
     if (S.mode === 'hb' && s.hb) rows.push(['Hydrogen bonds', `${ana.hb.length}<small>${(2 * ana.hb.length / sim.n).toFixed(1)} per molecule</small>`]);
   }
+  if (S.T < 0.5 && (S.view === 'many' || S.mode === 'dip' || S.mode === 'all'))
+    rows.push(['At 0 K', 'No thermal energy: molecules stop moving and turning (the dipole pair settles and stays put). Electrons do not stop — quantum zero-point motion keeps them moving, which is why the London clouds still flicker and atoms still attract at 0 K.']);
   $('#iRead').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
   // status chip
   let st = '';
