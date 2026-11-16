@@ -653,6 +653,28 @@ body.side-off .app > .panel{display:none}
 .ileg i{width:10px;height:3px;border-radius:2px}
 #iLegend i{border-radius:50%}
 @media (max-width:760px){ #iViewer{height:64svh;min-height:380px} .ivw button{padding:4px 7px;font-size:12px} #iViewer .hud-tr{top:auto;bottom:12px;left:12px;right:12px;justify-content:flex-end;flex-wrap:wrap} #iViewer .hud-bl{display:none} }
+/* ---------- unit cells ---------- */
+#uApp [hidden]{display:none!important}
+.ulab{position:absolute;left:0;top:0;font:600 13px/1 var(--f-mono);color:var(--fg);background:var(--glass);border:1px solid var(--line);border-radius:5px;padding:3px 6px;pointer-events:none;white-space:nowrap;will-change:transform}
+.ulab.eq{color:#FFD27A;border-color:rgba(255,210,122,.5)}
+.ulab.cn{color:#FFD27A;border-color:rgba(255,210,122,.5)}
+.ulab.ax{background:none;border:0;color:#A9C1FF;font-style:italic}
+#uEx button[aria-pressed="true"]{border-color:var(--accent);background:var(--sel);color:var(--accent)}
+#uEx button small{font-family:var(--f-mono);color:var(--muted);margin-left:2px}
+.ucsp{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.ucsp h3{margin:0 0 2px;font:600 13px var(--f-body)}
+.ucrow{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.ucrow i{width:12px;height:12px;border-radius:50%}
+.ucrow small{color:var(--muted);font-size:11.5px}
+.ucrow b{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums}
+.ucrow.tot{border-top:1px solid var(--line);padding-top:5px;grid-template-columns:minmax(0,1fr) auto}
+.ucrow.tot b{color:var(--accent)}
+.ucalc{display:flex;flex-direction:column;gap:6px}
+.ucst{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;font-size:12.5px;align-items:baseline}
+.ucst span{color:var(--muted)}
+.ucst b{font:500 12.5px/1.45 var(--f-mono);overflow-wrap:anywhere}
+.ucst sup{font-size:.75em}
+.ucst.res b{color:var(--accent);font-size:13.5px}
 </style>
 
 <header class="site">
@@ -1542,6 +1564,72 @@ body.side-off .app > .panel{display:none}
   </aside>
 </div>
 
+<div class="app" id="uApp" hidden>
+  <main class="viewer" id="uViewer">
+    <div class="labels" id="uLabels"></div>
+    <div class="hud hud-tl">
+      <div class="qtitle"><div class="tprop" id="uTitle"></div><div class="qtuple" id="uSub"></div></div>
+    </div>
+    <div class="hud hud-tr">
+      <button class="hbtn" id="uReset" type="button">Reset view</button>
+    </div>
+    <div class="hud hud-br"><div class="legend" id="uLegend"></div></div>
+  </main>
+
+  <aside class="panel">
+    <header class="brand">
+      <h1>Unit Cells</h1>
+      <p>The smallest repeating box of a crystal. Stack copies of it in every direction and you get the whole solid.</p>
+    </header>
+
+    <section aria-label="Structure">
+      <h2 class="sec-h">Structure</h2>
+      <div class="cfuel" role="radiogroup" aria-label="Structure" id="uType"></div>
+    </section>
+
+    <section aria-label="Example">
+      <h2 class="sec-h">Example substance</h2>
+      <div class="bulk" id="uEx"></div>
+    </section>
+
+    <section aria-label="Display" class="ctl">
+      <h2 class="sec-h" style="margin-bottom:0">Display</h2>
+      <div class="seg three" role="radiogroup" aria-label="Atoms" id="uStyle">
+        <button type="button" role="radio" data-s="cut" title="Space-filling atoms cut off at the cell walls, so you see the fraction that belongs to this cell">Cut at cell</button>
+        <button type="button" role="radio" data-s="full" title="Whole space-filling atoms">Whole atoms</button>
+        <button type="button" role="radio" data-s="small" title="Small spheres that show the positions">Positions</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="How many cells" id="uN">
+        <button type="button" role="radio" data-n="1">1 unit cell</button>
+        <button type="button" role="radio" data-n="2">2 × 2 × 2 cells</button>
+      </div>
+      <div class="toggles">
+        <label class="sw" title="Colour each atom by where it sits: corner, edge, face or inside"><input type="checkbox" id="uPos">Colour by position</label>
+        <label class="sw" title="Show the line along which the atoms touch, which links the edge length a to the radius r"><input type="checkbox" id="uTouch">Where atoms touch</label>
+        <label class="sw" title="Pick one atom and show its nearest neighbours"><input type="checkbox" id="uCN">Coordination number</label>
+        <label class="sw"><input type="checkbox" id="uSpin">Auto-rotate</label>
+      </div>
+    </section>
+
+    <section aria-label="Counting">
+      <h2 class="sec-h">Atoms per unit cell</h2>
+      <div class="ucount" id="uCount"></div>
+    </section>
+
+    <section aria-label="Geometry">
+      <h2 class="sec-h">Geometry</h2>
+      <dl class="readout" id="uGeo"></dl>
+    </section>
+
+    <section aria-label="Density">
+      <h2 class="sec-h">Density from the unit cell</h2>
+      <div class="ucalc" id="uCalc"></div>
+    </section>
+
+    <p class="note" id="uHow"></p>
+    <p class="note"><b>Data.</b> Lattice constants at room temperature and densities from the CRC Handbook. Ionic radii (Shannon) are scaled slightly so neighbouring ions just touch in the picture.</p>
+  </aside>
+</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
@@ -7492,6 +7580,328 @@ window.initIMF = function () {
 };
 })();
 </script>
+<script id="unitCells">
+/* ===== unit-cell page ===== */
+(() => {
+const $ = s => document.querySelector(s);
+const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const NA = 6.02214e23;
+const R3 = Math.sqrt(3), R2 = Math.SQRT2;
+const FCC = [[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]];
+
+/* ---------- structures ----------
+   sites: fractional positions in [0,1) for each species (M = metal or cation, X = anion)
+   touch: the line along which neighbours touch, with how many radii fit on it
+   cn: the atom whose neighbours are shown for the coordination number */
+const TYPES = {
+  sc: {name: 'Simple cubic', tag: 'SC', sites: {M: [[0, 0, 0]]}, touch: {a: [0, 0, 0], b: [1, 0, 0], eq: 'a = 2r', along: 'an edge'}, k: 2,
+    cn: {at: [1, 1, 1], sp: 'M'}, cnText: '6', geo: 'r = a / 2',
+    how: 'Atoms sit only at the 8 corners. Each corner is shared by 8 cubes, so each cell owns ⅛ of each corner atom: 8 × ⅛ = 1 atom. Neighbouring atoms touch along the cube edge. Only polonium crystallizes this way: the open packing wastes almost half the space.',
+    ex: ['Po']},
+  bcc: {name: 'Body-centred cubic', tag: 'BCC', sites: {M: [[0, 0, 0], [0.5, 0.5, 0.5]]}, touch: {a: [0, 0, 0], b: [1, 1, 1], eq: '√3 a = 4r', along: 'the body diagonal'}, k: 4,
+    cn: {at: [0.5, 0.5, 0.5], sp: 'M'}, cnText: '8', geo: 'r = √3 a / 4',
+    how: 'Corner atoms plus one atom in the very centre of the cube. Corners give 8 × ⅛ = 1 and the centre atom belongs wholly to this cell, so 2 atoms per cell. The corner atoms do not touch each other; each one touches the centre atom along the body diagonal, which holds 4 radii.',
+    ex: ['Fe', 'Na', 'W', 'Cr']},
+  fcc: {name: 'Face-centred cubic', tag: 'FCC · cubic closest packed', sites: {M: FCC}, touch: {a: [0, 0, 0], b: [1, 1, 0], eq: '√2 a = 4r', along: 'a face diagonal'}, k: 4,
+    cn: {at: [0.5, 0.5, 1], sp: 'M'}, cnText: '12', geo: 'r = a / (2√2) = √2 a / 4',
+    how: 'Corner atoms plus one atom in the middle of each of the 6 faces. A face atom is shared by the 2 cells on either side: 8 × ⅛ + 6 × ½ = 4 atoms per cell. Atoms touch along a face diagonal, which holds 4 radii. This is cubic closest packing: 74 % of the space is filled, the most possible for equal spheres.',
+    ex: ['Cu', 'Al', 'Ag', 'Au']},
+  nacl: {name: 'Sodium chloride', tag: 'Rock salt · 6:6', ionic: true, sites: {X: FCC, M: [[0.5, 0, 0], [0, 0.5, 0], [0, 0, 0.5], [0.5, 0.5, 0.5]]},
+    touch: {a: [0, 0, 0], b: [1, 0, 0], eq: 'a = 2r₊ + 2r₋', along: 'an edge'}, cn: {at: [0.5, 0.5, 0.5], sp: 'M'}, cnText: '6 : 6',
+    how: 'Anions form a face-centred cubic array; cations fill every octahedral hole: one at the body centre and one in the middle of each of the 12 edges (each edge shared by 4 cells). Cations: 12 × ¼ + 1 = 4; anions: 8 × ⅛ + 6 × ½ = 4. So the cell holds 4 formula units, ratio 1 : 1. Each ion has 6 neighbours of the opposite charge.',
+    ex: ['NaCl', 'KCl', 'MgO']},
+  cscl: {name: 'Cesium chloride', tag: '8:8', ionic: true, sites: {X: [[0, 0, 0]], M: [[0.5, 0.5, 0.5]]},
+    touch: {a: [0, 0, 0], b: [1, 1, 1], eq: '√3 a = 2r₊ + 2r₋', along: 'the body diagonal'}, cn: {at: [0.5, 0.5, 0.5], sp: 'M'}, cnText: '8 : 8',
+    how: 'Looks like body-centred cubic, but the corner and centre particles are different ions, so it is really two interpenetrating simple cubic lattices. Anions 8 × ⅛ = 1, cation 1: one formula unit per cell. A large cation such as Cs⁺ has room for 8 anion neighbours.',
+    ex: ['CsCl', 'CsBr']},
+  zns: {name: 'Zinc blende', tag: 'ZnS · 4:4', ionic: true, sites: {X: FCC, M: [[0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75]]},
+    touch: {a: [0, 0, 0], b: [0.25, 0.25, 0.25], eq: '√3 a / 4 = r₊ + r₋', along: '¼ of the body diagonal'}, cn: {at: [0.25, 0.25, 0.25], sp: 'M'}, cnText: '4 : 4',
+    how: 'Anions form a face-centred cubic array; small cations fill half of the tetrahedral holes, all 4 of them fully inside the cell. Anions 8 × ⅛ + 6 × ½ = 4, cations 4: four formula units per cell. Each ion is tetrahedrally surrounded by 4 of the other. Diamond is the same arrangement with carbon in every site.',
+    ex: ['ZnS', 'CuCl']}
+};
+/* lattice constant a (pm), molar mass, measured density (g/cm³) */
+const EX = {
+  Po: {name: 'Polonium', a: 335.2, M: 208.98, d: 9.20, col: '#B39A7E'},
+  Fe: {name: 'Iron', a: 286.65, M: 55.845, d: 7.874, col: '#A9B1BD'},
+  Na: {name: 'Sodium', a: 429.06, M: 22.990, d: 0.968, col: '#B48CF0'},
+  W: {name: 'Tungsten', a: 316.52, M: 183.84, d: 19.25, col: '#8FA3C7'},
+  Cr: {name: 'Chromium', a: 288.46, M: 51.996, d: 7.19, col: '#9FC1C9'},
+  Cu: {name: 'Copper', a: 361.49, M: 63.546, d: 8.96, col: '#D98C5F'},
+  Al: {name: 'Aluminium', a: 404.95, M: 26.982, d: 2.70, col: '#C9D1DB'},
+  Ag: {name: 'Silver', a: 408.53, M: 107.87, d: 10.49, col: '#DCE1E8'},
+  Au: {name: 'Gold', a: 407.82, M: 196.97, d: 19.30, col: '#E8C34F'},
+  NaCl: {name: 'Sodium chloride', a: 564.02, M: 58.44, d: 2.165, M_: ['Na⁺', 102, '#A97CF2'], X_: ['Cl⁻', 181, '#4FCF5F']},
+  KCl: {name: 'Potassium chloride', a: 629.2, M: 74.55, d: 1.98, M_: ['K⁺', 138, '#8F55D9'], X_: ['Cl⁻', 181, '#4FCF5F']},
+  MgO: {name: 'Magnesium oxide', a: 421.2, M: 40.30, d: 3.58, M_: ['Mg²⁺', 72, '#7BD08A'], X_: ['O²⁻', 140, '#F2554C']},
+  CsCl: {name: 'Cesium chloride', a: 412.3, M: 168.36, d: 3.99, M_: ['Cs⁺', 174, '#57B8C8'], X_: ['Cl⁻', 181, '#4FCF5F']},
+  CsBr: {name: 'Cesium bromide', a: 428.6, M: 212.81, d: 4.44, M_: ['Cs⁺', 174, '#57B8C8'], X_: ['Br⁻', 196, '#B5503F']},
+  ZnS: {name: 'Zinc sulfide', a: 541.0, M: 97.47, d: 4.09, M_: ['Zn²⁺', 60, '#8B9BC7'], X_: ['S²⁻', 184, '#E8D13A']},
+  CuCl: {name: 'Copper(I) chloride', a: 541.4, M: 99.00, d: 4.14, M_: ['Cu⁺', 60, '#D98C5F'], X_: ['Cl⁻', 181, '#4FCF5F']}
+};
+const POS = {corner: {c: '#6FB7FF', n: 'corner', share: 8, fr: '⅛'}, edge: {c: '#8FD36A', n: 'edge', share: 4, fr: '¼'}, face: {c: '#FFB86B', n: 'face', share: 2, fr: '½'}, body: {c: '#FF7E9D', n: 'inside', share: 1, fr: '1'}};
+
+/* ---------- state ---------- */
+const DEF = {t: 'fcc', ex: {sc: 'Po', bcc: 'Fe', fcc: 'Cu', nacl: 'NaCl', cscl: 'CsCl', zns: 'ZnS'}, style: 'cut', n: 1, pos: false, touch: false, cn: false, spin: false};
+const S = JSON.parse(JSON.stringify(DEF));
+try { const o = JSON.parse(ls.get('aov.cell') || '{}'); Object.assign(S, o, {ex: Object.assign({}, DEF.ex, o.ex || {})}); } catch (e) {}
+if (!(S.t in TYPES)) S.t = DEF.t;
+for (const t in TYPES) if (!TYPES[t].ex.includes(S.ex[t])) S.ex[t] = TYPES[t].ex[0];
+if (!['cut', 'full', 'small'].includes(S.style)) S.style = 'cut';
+S.n = S.n === 2 ? 2 : 1;
+const save = () => ls.set('aov.cell', JSON.stringify(S));
+const T = () => TYPES[S.t], X = () => EX[S.ex[S.t]];
+
+/* ---------- geometry ---------- */
+const A = 2;   // scene units per edge length
+const eps = 1e-6;
+// every site inside [0, n]³, boundary copies included
+function lattice(t, lo, hi) {
+  const out = [];
+  for (const sp in t.sites) for (const f of t.sites[sp])
+    for (let i = Math.floor(lo) - 1; i <= hi; i++) for (let j = Math.floor(lo) - 1; j <= hi; j++) for (let k = Math.floor(lo) - 1; k <= hi; k++) {
+      const p = [f[0] + i, f[1] + j, f[2] + k];
+      if (p.every(v => v >= lo - eps && v <= hi + eps)) out.push({sp, f: p});
+    }
+  return out;
+}
+const isInt = v => Math.abs(v - Math.round(v)) < eps;
+const classOf = f => ['body', 'face', 'edge', 'corner'][f.filter(isInt).length];
+// radii in units of a
+function radii() {
+  const t = T(), x = X(), L = Math.hypot(...t.touch.b.map((v, i) => v - t.touch.a[i]));
+  if (!t.ionic) { const r = L / t.k; return {M: r, rpm: {M: r * x.a}}; }
+  const sum = (x.M_[1] + x.X_[1]) / x.a;                       // r₊ + r₋ in units of a
+  const need = S.t === 'zns' ? L : L / 2;                        // nearest cation–anion distance
+  const f = need / sum;
+  return {M: x.M_[1] / x.a * f, X: x.X_[1] / x.a * f, rpm: {M: x.M_[1], X: x.X_[1]}};
+}
+function count() {   // per species: {corner: k, edge: k, …}, from one cell
+  const res = {};
+  for (const s of lattice(T(), 0, 1)) { const c = classOf(s.f); (res[s.sp] = res[s.sp] || {corner: 0, edge: 0, face: 0, body: 0})[c]++; }
+  const Z = {};
+  for (const sp in res) Z[sp] = Object.entries(res[sp]).reduce((a, [c, k]) => a + k / POS[c].share, 0);
+  return {res, Z};
+}
+
+/* ---------- three.js ---------- */
+let inited = false, viewer, renderer, scene, camera, controls, root = null, labs = [];
+const SPH = () => SPH.g || (SPH.g = new THREE.SphereGeometry(1, 44, 30));
+function initScene() {
+  viewer = $('#uViewer');
+  renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.localClippingEnabled = true;
+  viewer.prepend(renderer.domElement);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(32, 1, 0.05, 200);
+  scene.add(camera);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.minDistance = 2; controls.maxDistance = 40; controls.autoRotateSpeed = 1.4;
+  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x1a1f2a, 0.75));
+  const key = new THREE.DirectionalLight(0xffffff, 0.8); key.position.set(1, 1.5, 2); camera.add(key);
+  const rim = new THREE.DirectionalLight(0x9db8ff, 0.3); rim.position.set(-2, -1, -1.5); scene.add(rim);
+  const resize = () => { const w = viewer.clientWidth, h = viewer.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
+  new ResizeObserver(resize).observe(viewer); resize();
+  const loop = () => {
+    requestAnimationFrame(loop);
+    if ($('#uApp').hidden) return;
+    controls.autoRotate = S.spin;
+    controls.update(); renderer.render(scene, camera); placeLabels();
+  };
+  loop();
+}
+function fit() {
+  const s = (S.cn ? 2 : S.n) * A;
+  camera.position.set(1.15, 0.8, 1.6).normalize().multiplyScalar(s * 2.9 + 2);
+  controls.target.set(0, 0, 0); controls.update();
+}
+function dispose(o) { if (!o) return; scene.remove(o); o.traverse(c => { if (c.geometry && c.geometry !== SPH.g) c.geometry.dispose(); if (c.material) c.material.dispose(); }); }
+const Y = new THREE.Vector3(0, 1, 0);
+function cyl(a, b, r, mat) {
+  const d = new THREE.Vector3().subVectors(b, a), L = d.length();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 16, 1), mat);
+  m.position.copy(a).addScaledVector(d, 0.5); m.quaternion.setFromUnitVectors(Y, d.normalize());
+  return m;
+}
+function darker(hex, k) { const c = new THREE.Color(hex); c.multiplyScalar(k); return c; }
+function label(html, p, cls) {
+  const el = document.createElement('div'); el.className = 'ulab' + (cls ? ' ' + cls : ''); el.innerHTML = html;
+  $('#uLabels').appendChild(el); labs.push({el, v: p.clone()});
+}
+function placeLabels() {
+  const w = viewer.clientWidth, h = viewer.clientHeight, v = new THREE.Vector3();
+  for (const L of labs) {
+    v.copy(L.v).project(camera);
+    if (v.z > 1) { L.el.style.display = 'none'; continue; }
+    L.el.style.display = '';
+    L.el.style.transform = `translate(${((v.x + 1) / 2 * w).toFixed(1)}px,${((1 - v.y) / 2 * h).toFixed(1)}px) translate(-50%,-50%)`;
+  }
+}
+
+function build() {
+  if (!scene) return;
+  dispose(root); root = new THREE.Group(); scene.add(root);
+  labs = []; $('#uLabels').innerHTML = '';
+  const t = T(), x = X(), R = radii();
+  const colOf = sp => t.ionic ? (sp === 'M' ? x.M_[2] : x.X_[2]) : x.col;
+
+  // which sites, and the box they are drawn in (fractional coordinates)
+  let sites, lo, hi, cen;
+  if (S.cn) {
+    // one atom and its nearest neighbours of the other kind (ionic) or the same kind (metal)
+    const c = t.cn.at, all = lattice(t, -1, 3);
+    const other = t.ionic ? (t.cn.sp === 'M' ? 'X' : 'M') : t.cn.sp;
+    let dmin = Infinity;
+    const dist = s => Math.hypot(s.f[0] - c[0], s.f[1] - c[1], s.f[2] - c[2]);
+    for (const s of all) if (s.sp === other) { const d = dist(s); if (d > eps && d < dmin) dmin = d; }
+    sites = [{sp: t.cn.sp, f: c, center: true}, ...all.filter(s => s.sp === other && Math.abs(dist(s) - dmin) < 1e-4)];
+    lo = [0, 1, 2].map(i => Math.floor(Math.min(...sites.map(s => s.f[i])) + eps));
+    hi = [0, 1, 2].map(i => Math.max(lo[i] + 1, Math.ceil(Math.max(...sites.map(s => s.f[i])) - eps)));
+  } else {
+    sites = lattice(t, 0, S.n); lo = [0, 0, 0]; hi = [S.n, S.n, S.n];
+  }
+  cen = [0, 1, 2].map(i => (lo[i] + hi[i]) / 2);
+  const W = f => new THREE.Vector3((f[0] - cen[0]) * A, (f[2] - cen[2]) * A, -(f[1] - cen[1]) * A);   // z-up crystal axes → three's y-up
+
+  // clipping box for "cut at cell"
+  const cut = S.style === 'cut' && !S.cn;
+  const half = S.n * A / 2;
+  const planes = cut ? [
+    new THREE.Plane(new THREE.Vector3(1, 0, 0), half), new THREE.Plane(new THREE.Vector3(-1, 0, 0), half),
+    new THREE.Plane(new THREE.Vector3(0, 1, 0), half), new THREE.Plane(new THREE.Vector3(0, -1, 0), half),
+    new THREE.Plane(new THREE.Vector3(0, 0, 1), half), new THREE.Plane(new THREE.Vector3(0, 0, -1), half)] : [];
+
+  // cell frames
+  const edgeMat = new THREE.LineBasicMaterial({color: 0xA9C1FF, transparent: true, opacity: 0.9});
+  const gridMat = new THREE.LineBasicMaterial({color: 0x5b6577, transparent: true, opacity: 0.55});
+  const seg = [], segG = [];
+  for (let i = lo[0]; i <= hi[0]; i++) for (let j = lo[1]; j <= hi[1]; j++) for (let k = lo[2]; k <= hi[2]; k++) {
+    for (const d of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) {
+      const b = [i + d[0], j + d[1], k + d[2]];
+      if (b[0] > hi[0] || b[1] > hi[1] || b[2] > hi[2]) continue;
+      // the edges of the first cell are drawn bright, the rest as a faint grid
+      const first = [i, j, k, ...b].every(v => v === 0 || v === 1);
+      (first ? seg : segG).push(W([i, j, k]), W(b));
+    }
+  }
+  if (seg.length) root.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(seg), edgeMat));
+  if (segG.length) root.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(segG), gridMat));
+
+  // atoms
+  const see = S.touch && !S.cn;
+  for (const s of sites) {
+    const r = (s.sp === 'X' ? R.X : R.M) * A;
+    const size = S.cn ? (s.center ? 0.24 : 0.2) : S.style === 'small' ? r * 0.32 : r;   // equal small balls so the neighbours are easy to count
+    const col = S.pos && !S.cn ? POS[classOf(s.f)].c : colOf(s.sp);
+    const front = new THREE.MeshStandardMaterial({color: new THREE.Color(col), roughness: 0.38, metalness: t.ionic ? 0.02 : 0.25,
+      clippingPlanes: planes, transparent: see, opacity: see ? 0.32 : 1, depthWrite: !see,
+      emissive: s.center ? new THREE.Color(col) : 0x000000, emissiveIntensity: s.center ? 0.35 : 0});
+    const m = new THREE.Mesh(SPH(), front); m.scale.setScalar(size); m.position.copy(W(s.f)); root.add(m);
+    if (cut) {   // the cut face: the sphere's inside, drawn flat and darker so pieces read as solid
+      const back = new THREE.MeshBasicMaterial({color: darker(col, 0.55), side: THREE.BackSide, clippingPlanes: planes, transparent: see, opacity: see ? 0.32 : 1, depthWrite: !see});
+      const b = new THREE.Mesh(SPH(), back); b.scale.setScalar(size); b.position.copy(m.position); root.add(b);
+    }
+  }
+  if (S.cn) {
+    const c = W(sites[0].f), stick = new THREE.MeshStandardMaterial({color: 0xFFD27A, roughness: 0.5, emissive: 0xFFD27A, emissiveIntensity: 0.15});
+    for (const s of sites.slice(1)) root.add(cyl(c, W(s.f), 0.035, stick));
+    label(`CN = ${sites.length - 1}`, c.clone().add(new THREE.Vector3(0, 0.5, 0)), 'cn');
+  }
+  if (see) {   // the line where neighbours touch
+    const a = W(t.touch.a), b = W(t.touch.b);
+    const mat = new THREE.MeshStandardMaterial({color: 0xFFD27A, emissive: 0xFFD27A, emissiveIntensity: 0.5});
+    root.add(cyl(a, b, 0.03, mat));
+    // tick marks at each radius boundary
+    const L = a.distanceTo(b), u = b.clone().sub(a).normalize();
+    const marks = [];
+    if (!t.ionic) { for (let i = 0; i <= t.k; i++) marks.push(i / t.k); }
+    else {
+      const rM = R.M * A, rX = R.X * A;
+      // anion at the start, then cation (NaCl/CsCl end on another anion)
+      const seq = S.t === 'zns' ? [0, rX, rX + rM] : [0, rX, rX + 2 * rM, 2 * rX + 2 * rM];
+      for (const d of seq) marks.push(d / L);
+    }
+    const tick = new THREE.MeshBasicMaterial({color: 0xFFD27A});
+    for (const f of marks) { const p = a.clone().addScaledVector(u, f * L); const m = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), tick); m.position.copy(p); root.add(m); }
+    label(t.touch.eq, a.clone().lerp(b, 0.5).add(new THREE.Vector3(0, 0.28, 0)), 'eq');
+  }
+  // axis label for the edge length
+  if (!S.cn) label('a', W([0.5, 0, 0]).add(new THREE.Vector3(0, -0.22, 0.22)), 'ax');
+}
+
+/* ---------- panel ---------- */
+const fmt = (v, d = 3) => v.toPrecision(d);
+function sci(v, d = 3) { const e = Math.floor(Math.log10(Math.abs(v))); const m = v / 10 ** e; return `${m.toFixed(d)}×10<sup>${String(e).replace('-', '−')}</sup>`; }
+function render(refit) {
+  const t = T(), x = X(), R = radii(), {res, Z} = count();
+  document.querySelectorAll('#uType button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.t === S.t)));
+  $('#uEx').innerHTML = t.ex.map(id => `<button type="button" data-x="${id}" aria-pressed="${id === S.ex[S.t]}">${EX[id].name} <small>${id}</small></button>`).join('');
+  document.querySelectorAll('#uStyle button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === S.style)));
+  document.querySelectorAll('#uN button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.n === S.n)));
+  $('#uPos').checked = S.pos; $('#uTouch').checked = S.touch; $('#uCN').checked = S.cn; $('#uSpin').checked = S.spin;
+  $('#uTitle').innerHTML = `${t.name}`;
+  $('#uSub').innerHTML = `<b>${x.name}</b> · ${t.tag} · a = ${x.a} pm`;
+  $('#uHow').innerHTML = `<b>How it works.</b> ${t.how}`;
+
+  // counting
+  const spName = sp => t.ionic ? (sp === 'M' ? x.M_[0] : x.X_[0]) : x.name.toLowerCase() + ' atoms';
+  const order = t.ionic ? ['M', 'X'] : ['M'];
+  let html = '';
+  for (const sp of order) {
+    const r = res[sp];
+    const terms = Object.keys(POS).filter(c => r[c]).map(c =>
+      `<div class="ucrow"><i style="background:${S.pos ? POS[c].c : (t.ionic ? (sp === 'M' ? x.M_[2] : x.X_[2]) : x.col)}"></i><span>${r[c]} ${POS[c].n}${r[c] > 1 ? (c === 'body' ? '' : 's') : ''}${c === 'body' ? '' : ` <small>(shared by ${POS[c].share})</small>`}</span><b>${r[c]} × ${POS[c].fr} = ${fmtFrac(r[c] / POS[c].share)}</b></div>`).join('');
+    html += `<div class="ucsp">${t.ionic ? `<h3>${spName(sp)}</h3>` : ''}${terms}<div class="ucrow tot"><span>Total</span><b>${Z[sp]} ${t.ionic ? spName(sp) : (Z[sp] === 1 ? 'atom' : 'atoms')}</b></div></div>`;
+  }
+  if (t.ionic) html += `<p class="ecap" style="margin:8px 0 0">${x.M_[0]} : ${x.X_[0]} = ${Z.M} : ${Z.X} = 1 : 1, so the cell holds <b>${Z.M} formula unit${Z.M > 1 ? 's' : ''}</b> of ${S.ex[S.t]}.</p>`;
+  $('#uCount').innerHTML = html;
+
+  // geometry
+  const rows = [];
+  rows.push(['Coordination number', `${t.cnText}<small>${t.ionic ? 'nearest neighbours of the opposite charge, for each ion' : 'nearest neighbours of each atom'}</small>`]);
+  rows.push(['Atoms touch along', `${t.touch.along}<small>${t.touch.eq}</small>`]);
+  if (!t.ionic) {
+    const r = R.rpm.M, pf = Z.M * 4 / 3 * Math.PI * Math.pow(R.M, 3);
+    rows.push(['Atomic radius', `${r.toFixed(1)} pm<small>${t.geo}</small>`]);
+    rows.push(['Space filled', `${(pf * 100).toFixed(1)} %<small>${Z.M} × (4/3)πr³ ÷ a³</small>`]);
+  } else {
+    rows.push(['Ionic radii', `${x.M_[0]} ${x.M_[1]} pm · ${x.X_[0]} ${x.X_[1]} pm<small>r₊ / r₋ = ${(x.M_[1] / x.X_[1]).toFixed(2)}</small>`]);
+  }
+  $('#uGeo').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+
+  // density
+  const z = t.ionic ? Z.M : Z.M, acm = x.a * 1e-10, V = acm ** 3, m = z * x.M / NA, d = m / V;
+  $('#uCalc').innerHTML =
+    `<div class="ucst"><span>Edge</span><b>a = ${x.a} pm = ${sci(acm, 4)} cm</b></div>` +
+    `<div class="ucst"><span>Volume</span><b>V = a³ = ${sci(V)} cm³</b></div>` +
+    `<div class="ucst"><span>Mass</span><b>m = ${z} × ${x.M} g/mol ÷ ${sci(NA, 3)} mol⁻¹ = ${sci(m)} g</b></div>` +
+    `<div class="ucst res"><span>Density</span><b>d = m / V = ${d.toFixed(d < 3 ? 3 : 2)} g/cm³</b></div>` +
+    `<p class="ecap" style="margin:8px 0 0">Measured: ${x.d} g/cm³. The ${z} is the number of ${t.ionic ? 'formula units' : 'atoms'} per cell found above.</p>`;
+
+  // legend
+  $('#uLegend').innerHTML = S.pos && !S.cn ? Object.values(POS).map(p => `<span><i style="background:${p.c};border-radius:50%"></i>${p.n} (${p.fr})</span>`).join('')
+    : t.ionic ? `<span><i style="background:${x.M_[2]};border-radius:50%"></i>${x.M_[0]}</span><span><i style="background:${x.X_[2]};border-radius:50%"></i>${x.X_[0]}</span>`
+    : `<span><i style="background:${x.col};border-radius:50%"></i>${S.ex[S.t]}</span>`;
+  build();
+  if (refit) fit();
+}
+function fmtFrac(v) { const F = {0.125: '⅛', 0.25: '¼', 0.5: '½', 0.75: '¾'}; return Number.isInteger(v) ? String(v) : (F[v] || v.toFixed(3)); }
+
+function bind() {
+  $('#uType').innerHTML = Object.entries(TYPES).map(([k, t]) => `<button type="button" role="radio" data-t="${k}">${t.name}<small>${t.tag}</small></button>`).join('');
+  $('#uType').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.t = b.dataset.t; save(); render(true); });
+  $('#uEx').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.ex[S.t] = b.dataset.x; save(); render(false); });
+  $('#uStyle').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.style = b.dataset.s; save(); render(false); });
+  $('#uN').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.n = +b.dataset.n; save(); render(true); });
+  for (const [id, k] of [['#uPos', 'pos'], ['#uTouch', 'touch'], ['#uCN', 'cn'], ['#uSpin', 'spin']])
+    $(id).addEventListener('change', e => { S[k] = e.target.checked; save(); if (k !== 'spin') render(k === 'cn'); });
+  $('#uReset').addEventListener('click', fit);
+}
+window.initCells = function () {
+  if (!inited) { inited = true; bind(); initScene(); render(true); }
+};
+})();
+</script>
 <script>
 /* ---------- site map + router ----------
    One registry drives the header nav, the home page and routing.
@@ -7527,6 +7937,11 @@ window.initIMF = function () {
       {id: 'imf', app: '#iApp', nav: 'Dispersion · dipole · H-bond', title: 'Intermolecular Forces', init: () => window.initIMF(),
        desc: 'Watch London dispersion, dipole–dipole attraction and hydrogen bonding up close, then simulate many molecules to see which substances condense at a given temperature.',
        tags: ['Induced dipoles', 'Polar molecules', 'H-bonds & boiling points']}
+    ]},
+    {name: 'Solids', blurb: 'How particles pack in a crystal', pages: [
+      {id: 'cells', app: '#uApp', nav: 'Unit cells', title: 'Unit Cells', init: () => window.initCells(),
+       desc: 'Simple, body-centred and face-centred cubic cells plus NaCl, CsCl and zinc blende in 3D: count the atoms per cell, see where atoms touch, find the coordination number and work out the density.',
+       tags: ['SC · BCC · FCC', 'Atoms per cell', 'Density from a']}
     ]},
     {name: 'Thermochemistry', blurb: 'Measuring the heat of a reaction', pages: [
       {id: 'calorimeter', app: '#cApp', nav: 'Bomb calorimeter', title: 'Bomb Calorimeter', init: () => window.initCalorimeter(),
