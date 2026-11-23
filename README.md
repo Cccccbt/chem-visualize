@@ -16,6 +16,7 @@ page (`index.html` or `#home`) lists them all.
 | Chemical bonding | Valence Bond Theory — hybrid orbitals forming σ bonds, with orbital diagrams; σ and π overlap (overlap and bonding-orbital views) with an energy curve | `#vbt` |
 | Chemical bonding | Molecular Orbital Theory — MO diagrams in two modes: General (two identical atoms, any number of valence electrons, 1s or 2s + 2p, with or without s–p mixing) and Molecules (H₂–Ne₂ and ions); bond order and magnetism; 3D bonding/antibonding orbitals | `#mo` |
 | Solutions | Dissolving — the three steps (separate solute, separate solvent, mix) with ΔH₁, ΔH₂, ΔH₃ and ΔH<sub>soln</sub>; set solute–solute, solvent–solvent and solute–solvent strengths or pick a real pair | `#dissolve` |
+| Solutions | Solubility Curves — g per 100 g water against temperature; drag a point for unsaturated / saturated / supersaturated, beaker view, cool or heat to see how much crystallizes | `#solubility` |
 | Thermochemistry | Bomb Calorimeter — animated cutaway with q = C·ΔT → ΔU → ΔH | `#calorimeter` |
 | Reference | Exam Appendix — General Chemistry II constants, equations and Kₐ tables | `#appendix` |
 

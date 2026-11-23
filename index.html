@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="zh-CN"><head>
 <meta charset="utf-8">
-<meta name="version" content="1.74"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="version" content="1.75"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Chem Visualize</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -726,11 +726,18 @@ body.side-off .app > .panel{display:none}
 #dLegend em{font-style:normal}
 #dLegend sub{font-size:.75em;vertical-align:-.25em;line-height:0}
 @media (max-width:760px){ #dViewer{height:62svh;min-height:380px} #dViewer .hud-tr{top:auto;bottom:12px;left:12px;right:12px;justify-content:flex-end;flex-wrap:wrap} #dViewer .hud-bl{display:none} }
+/* ---------- solubility curves ---------- */
+#sApp [hidden]{display:none!important}
+#sCanvas{cursor:crosshair}
+#sCanvas:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#sSubs button i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:6px}
+.sbk{display:block;width:100%;height:170px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
+@media (max-width:760px){ #sViewer{height:62svh;min-height:380px} }
 </style>
 
 <header class="site">
   <a class="site-brand" href="#home"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><ellipse cx="10" cy="10" rx="8.5" ry="3.4"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(60 10 10)"/><ellipse cx="10" cy="10" rx="8.5" ry="3.4" transform="rotate(120 10 10)"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg><span>Chem Visualize</span></a>
-  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.74 · updated 2026-11-23 · see the change history">v1.74</a>
+  <a class="site-ver" id="siteVer" href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener" title="Version 1.75 · updated 2026-11-23 · see the change history">v1.75</a>
   <nav class="site-nav" id="siteNav" aria-label="Tools"></nav>
 </header>
 
@@ -741,7 +748,7 @@ body.side-off .app > .panel{display:none}
       <p>Interactive chemistry models that run in the browser. Pick a tool to start.</p>
     </header>
     <div id="homeTopics"></div>
-    <p class="home-ver">Version 1.74 · updated 2026-11-23 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
+    <p class="home-ver">Version 1.75 · updated 2026-11-23 · <a href="https://github.com/Cccccbt/chem-visualize/commits/main" target="_blank" rel="noopener">change history</a></p>
   </div>
 </main>
 
@@ -1796,6 +1803,48 @@ body.side-off .app > .panel{display:none}
 
     <p class="note" id="dHow"></p>
     <p class="note"><b>The model.</b> Strengths are on a relative 1–10 scale, and the enthalpy bars use the same relative units: ΔH₁ = solute–solute, ΔH₂ = solvent–solvent, ΔH₃ = −2 × solute–solvent (break one solute–solute and one solvent–solvent contact, and two solute–solvent contacts can form in their place). Measured ΔH<sub>soln</sub> values are at 25 °C, infinite dilution.</p>
+  </aside>
+</div>
+<div class="app" id="sApp" hidden>
+  <main class="viewer" id="sViewer">
+    <canvas id="sCanvas" role="img" aria-label="Solubility curves: grams of solute per 100 g of water against temperature, with a movable point"></canvas>
+    <div class="hud hud-tl">
+      <div class="qtitle"><div class="tprop" id="sTitle"></div><div class="qtuple" id="sSub"></div></div>
+      <div class="chip" id="sChip" role="status"></div>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <header class="brand">
+      <h1>Solubility Curves</h1>
+      <p>How much solute dissolves in 100 g of water at each temperature. Drag the point: below a curve the solution is unsaturated, on it saturated, above it there is more solute than can stay dissolved.</p>
+    </header>
+
+    <section aria-label="Substance">
+      <h2 class="sec-h">Substance</h2>
+      <div class="cfuel" role="radiogroup" aria-label="Substance" id="sSubs"></div>
+      <div class="toggles" style="margin-top:10px"><label class="sw"><input type="checkbox" id="sAll">Show all curves</label></div>
+    </section>
+
+    <section aria-label="Beaker">
+      <h2 class="sec-h">In the beaker · 100 g water</h2>
+      <canvas id="sBeaker" class="sbk" role="img" aria-label="Beaker showing dissolved and undissolved solute"></canvas>
+      <dl class="readout" id="sRead" style="margin-top:12px"></dl>
+    </section>
+
+    <section aria-label="Change the temperature">
+      <h2 class="sec-h"><span>Change the temperature</span><span class="mhint">same amount of solute</span></h2>
+      <div class="bulk" id="sGo">
+        <button type="button" data-t="0">Cool to 0 °C</button>
+        <button type="button" data-t="20">Cool / warm to 20 °C</button>
+        <button type="button" data-t="80">Heat to 80 °C</button>
+        <button type="button" data-t="sat">Make saturated here</button>
+      </div>
+      <p class="ecap" id="sLog" style="margin:10px 0 0"></p>
+    </section>
+
+    <p class="note" id="sHow"></p>
+    <p class="note"><b>Data.</b> Approximate values (g per 100 g H<sub>2</sub>O) as drawn on the standard textbook solubility chart, from CRC Handbook data; NH<sub>3</sub> is a gas at 1 atm. Curves above 150 g are cut off, as on the chart.</p>
   </aside>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -9171,6 +9220,266 @@ window.initDissolve = function () {
 };
 })();
 </script>
+<script id="solubility">
+/* ===== solubility curves page ===== */
+(() => {
+const $ = s => document.querySelector(s);
+const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const MINUS = '−';
+const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* g solute per 100 g water at 0, 10, … 100 °C (textbook chart values) */
+const SUBS = [
+  {id: 'kno3', f: 'KNO<sub>3</sub>', t: 'KNO3', c: '#FF8A80', v: [13.3, 20.9, 31.6, 45.8, 63.9, 85.5, 110, 138, 169, 202, 246]},
+  {id: 'nano3', f: 'NaNO<sub>3</sub>', t: 'NaNO3', c: '#F2A25C', v: [73, 80, 88, 96, 104, 114, 124, 134, 148, 161, 180]},
+  {id: 'nh4cl', f: 'NH<sub>4</sub>Cl', t: 'NH4Cl', c: '#FFD27A', v: [29.4, 33.3, 37.2, 41.4, 45.8, 50.4, 55.2, 60.2, 65.6, 71.3, 77.3]},
+  {id: 'kcl', f: 'KCl', t: 'KCl', c: '#8FD6A8', v: [27.6, 31.0, 34.0, 37.0, 40.0, 42.6, 45.5, 48.3, 51.1, 54.0, 56.7]},
+  {id: 'nacl', f: 'NaCl', t: 'NaCl', c: '#7FB2FF', v: [35.7, 35.8, 36.0, 36.3, 36.6, 37.0, 37.3, 37.8, 38.4, 39.0, 39.8]},
+  {id: 'kclo3', f: 'KClO<sub>3</sub>', t: 'KClO3', c: '#C9A8FF', v: [3.3, 5.2, 7.3, 10.1, 13.9, 19.3, 23.8, 29.4, 37.5, 46, 56.3]},
+  {id: 'ce', f: 'Ce<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub>', t: 'Ce2(SO4)3', c: '#E3E6EB', v: [20, 14, 10, 7.5, 6, 5, 4, 3.5, 3, 2.5, 2]},
+  {id: 'nh3', f: 'NH<sub>3</sub> (gas)', t: 'NH3', c: '#6FD3E0', gas: true, v: [88, 70, 56, 44, 34, 26, 20, 15, 12, 10, 8]}
+];
+const YMAX = 150;
+// Catmull-Rom through the 10 °C points
+function sol(s, T) {
+  T = Math.max(0, Math.min(100, T));
+  const i = Math.min(9, Math.floor(T / 10)), u = T / 10 - i, v = s.v;
+  const p0 = v[Math.max(0, i - 1)], p1 = v[i], p2 = v[i + 1], p3 = v[Math.min(10, i + 2)];
+  return Math.max(0, 0.5 * (2 * p1 + (-p0 + p2) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (-p0 + 3 * p1 - 3 * p2 + p3) * u * u * u));
+}
+
+/* ---------- state ---------- */
+const DEF = {s: 'kno3', all: true, pt: {}};
+const S = Object.assign({}, DEF);
+try { Object.assign(S, JSON.parse(ls.get('aov.solubility') || '{}')); } catch (e) {}
+if (!SUBS.some(s => s.id === S.s)) S.s = 'kno3';
+if (typeof S.pt !== 'object' || !S.pt) S.pt = {};
+const save = () => ls.set('aov.solubility', JSON.stringify(S));
+const sub = () => SUBS.find(s => s.id === S.s);
+const ptOf = id => { const p = S.pt[id]; if (Array.isArray(p) && p.length === 2 && p.every(isFinite)) return p; const s = SUBS.find(q => q.id === id); return [60, Math.min(YMAX, Math.round(sol(s, 60) * 0.7))]; };
+let T = 0, G = 0;   // the point: temperature (°C) and grams added per 100 g water
+const fmt = x => (Math.abs(x) >= 100 ? Math.round(x) : x.toFixed(1)).toString();
+const fmtT = t => `${t < -0.05 ? MINUS : ''}${Math.abs(t).toFixed(0)} °C`;
+
+/* ---------- canvas ---------- */
+let inited = false, cv, g, W = 0, H = 0, dpr = 1, raf = 0, last = 0, drag = false;
+let bk, bg, BW = 0, BH = 0, anim = null, crystals = [], clock = 0;
+function box() { const l = 66, r = W < 760 ? 52 : 74, t = 132, b = 58; return {x: l, y: t, w: Math.max(60, W - l - r), h: Math.max(60, H - t - b)}; }
+const X = (k, t) => k.x + t / 100 * k.w, Y = (k, gr) => k.y + (1 - gr / YMAX) * k.h;
+function resize() {
+  const r = $('#sViewer').getBoundingClientRect();
+  dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const br = bk.getBoundingClientRect(); BW = br.width; BH = br.height;
+  bk.width = Math.round(BW * dpr); bk.height = Math.round(BH * dpr);
+  draw(); drawBeaker();
+}
+function txt(s, x, y, col, size = 12, w = 500, align = 'center', base = 'middle', font = '"IBM Plex Sans",sans-serif') { g.font = `${w} ${size}px ${font}`; g.fillStyle = col; g.textAlign = align; g.textBaseline = base; g.fillText(s, x, y); }
+function state() {
+  const s = sub(), S0 = sol(s, T), d = G - S0, tol = Math.max(0.6, S0 * 0.02);
+  return {S0, sat: Math.abs(d) <= tol ? 'sat' : d < 0 ? 'un' : 'over', excess: Math.max(0, G - S0), dissolved: Math.min(G, S0)};
+}
+function draw() {
+  if (!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  const k = box(), s = sub(), st = state();
+  // shade the regions under / over the selected curve
+  g.save(); g.beginPath(); g.rect(k.x, k.y, k.w, k.h); g.clip();
+  g.beginPath(); g.moveTo(X(k, 0), Y(k, 0));
+  for (let t = 0; t <= 100; t += 1) g.lineTo(X(k, t), Y(k, sol(s, t)));
+  g.lineTo(X(k, 100), Y(k, 0)); g.closePath(); g.fillStyle = 'rgba(143,214,168,.07)'; g.fill();
+  g.beginPath(); g.moveTo(X(k, 0), Y(k, YMAX));
+  for (let t = 0; t <= 100; t += 1) g.lineTo(X(k, t), Y(k, sol(s, t)));
+  g.lineTo(X(k, 100), Y(k, YMAX)); g.closePath(); g.fillStyle = 'rgba(255,138,128,.06)'; g.fill();
+  g.restore();
+  // grid & axes
+  g.strokeStyle = '#1c222c'; g.lineWidth = 1;
+  for (let t = 0; t <= 100; t += 10) { g.beginPath(); g.moveTo(X(k, t), k.y); g.lineTo(X(k, t), k.y + k.h); g.stroke(); txt(String(t), X(k, t), k.y + k.h + 14, '#8A93A1', 11, 500, 'center', 'middle', '"IBM Plex Mono",monospace'); }
+  for (let v = 0; v <= YMAX; v += 10) { g.beginPath(); g.moveTo(k.x, Y(k, v)); g.lineTo(k.x + k.w, Y(k, v)); g.strokeStyle = v % 50 ? '#1c222c' : '#283040'; g.stroke(); if (v % 20 === 0 || v === YMAX) txt(String(v), k.x - 8, Y(k, v), '#8A93A1', 11, 500, 'right', 'middle', '"IBM Plex Mono",monospace'); }
+  g.strokeStyle = '#5b6577'; g.beginPath(); g.moveTo(k.x, k.y); g.lineTo(k.x, k.y + k.h); g.lineTo(k.x + k.w, k.y + k.h); g.stroke();
+  txt('Temperature (°C)', k.x + k.w / 2, k.y + k.h + 36, '#8A93A1', 12);
+  g.save(); g.translate(k.x - 46, k.y + k.h / 2); g.rotate(-Math.PI / 2); txt('Solubility (g solute / 100 g water)', 0, 0, '#8A93A1', 12); g.restore();
+  // region labels for the selected curve
+  const uT = 85, uS = sol(s, uT);
+  if (uS > 18) txt('unsaturated', X(k, uT), Y(k, uS * 0.45), 'rgba(143,214,168,.55)', 12, 600);
+  if (YMAX - Math.min(YMAX, sol(s, 15)) > 25) txt('supersaturated', X(k, 15), Y(k, (Math.min(YMAX, sol(s, 15)) + YMAX) / 2), 'rgba(255,138,128,.5)', 12, 600);
+  // curves
+  g.save(); g.beginPath(); g.rect(k.x, k.y - 2, k.w, k.h + 2); g.clip();
+  const list = S.all ? SUBS : [s];
+  for (const q of list) {
+    const on = q === s;
+    g.beginPath();
+    for (let t = 0; t <= 100; t += 1) { const x = X(k, t), y = Y(k, sol(q, t)); t ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.strokeStyle = q.c; g.lineWidth = on ? 3.2 : 1.6; g.globalAlpha = on ? 1 : 0.55;
+    if (q.gas) g.setLineDash([6, 4]); else g.setLineDash([]);
+    g.stroke();
+  }
+  g.setLineDash([]); g.globalAlpha = 1; g.restore();
+  // curve labels at the right end (or where they leave the top)
+  const lab = [];
+  for (const q of list) {
+    let t = 100; while (t > 0 && sol(q, t) > YMAX) t -= 1;
+    lab.push({q, x: X(k, t), y: Y(k, Math.min(YMAX, sol(q, t))), top: t < 100});
+  }
+  lab.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < lab.length; i++) if (!lab[i].top && !lab[i - 1].top && lab[i].y - lab[i - 1].y < 14) lab[i].y = lab[i - 1].y + 14;
+  for (const l of lab) {
+    const on = l.q === s;
+    if (l.top) txt(l.q.t, l.x - 4, k.y - 8, l.q.c, on ? 12.5 : 11, on ? 700 : 500, 'right');
+    else txt(l.q.t, l.x + 5, l.y, l.q.c, on ? 12.5 : 11, on ? 700 : 500, 'left');
+  }
+  // the point and its guides
+  const px = X(k, T), py = Y(k, Math.min(YMAX, G)), cy = Y(k, Math.min(YMAX, st.S0));
+  g.setLineDash([3, 4]); g.strokeStyle = 'rgba(227,230,235,.35)'; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(px, k.y + k.h); g.lineTo(px, py); g.moveTo(k.x, py); g.lineTo(px, py); g.stroke(); g.setLineDash([]);
+  if (st.sat === 'over' && st.S0 < YMAX) {   // excess above the curve
+    g.strokeStyle = '#FF8A80'; g.lineWidth = 2; g.beginPath(); g.moveTo(px, py); g.lineTo(px, cy); g.stroke();
+    txt(`${fmt(st.excess)} g extra`, px + 8, (py + cy) / 2, '#FF8A80', 11.5, 600, 'left', 'middle', '"IBM Plex Mono",monospace');
+  }
+  if (anim && anim.trail.length > 1) { g.strokeStyle = '#FFD27A'; g.lineWidth = 2; g.beginPath(); anim.trail.forEach(([t, gr], i) => { const x = X(k, t), y = Y(k, Math.min(YMAX, gr)); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); }
+  const col = st.sat === 'sat' ? '#FFD27A' : st.sat === 'un' ? '#8FD6A8' : '#FF8A80';
+  g.beginPath(); g.arc(px, py, 8, 0, 7); g.fillStyle = col; g.fill(); g.strokeStyle = '#0A0D12'; g.lineWidth = 2; g.stroke();
+  if (st.sat === 'over' && st.S0 < YMAX) { g.beginPath(); g.arc(px, cy, 4.5, 0, 7); g.fillStyle = s.c; g.fill(); }
+}
+function drawBeaker() {
+  if (!bg || !BW) return;
+  bg.setTransform(dpr, 0, 0, dpr, 0, 0); bg.clearRect(0, 0, BW, BH);
+  const s = sub(), st = state(), bw = Math.min(150, BW * 0.42), bx = 18, by = 14, bh = BH - 28;
+  // beaker
+  bg.strokeStyle = '#8A93A1'; bg.lineWidth = 2; bg.beginPath(); bg.moveTo(bx, by); bg.lineTo(bx, by + bh); bg.lineTo(bx + bw, by + bh); bg.lineTo(bx + bw, by); bg.stroke();
+  const wy = by + bh * 0.18;
+  bg.fillStyle = 'rgba(127,178,255,.12)'; bg.fillRect(bx + 1, wy, bw - 2, by + bh - wy - 1);
+  // dissolved particles: density ∝ dissolved grams (scale to the chart top)
+  const n = Math.round(Math.min(1, st.dissolved / YMAX) * 90);
+  bg.fillStyle = s.c;
+  for (let i = 0; i < n; i++) {
+    const hx = (Math.sin(i * 12.9898 + 1.3) * 43758.5453) % 1, hy = (Math.sin(i * 78.233 + 2.1) * 12345.678) % 1;
+    const jx = calm ? 0 : Math.sin(clock * 1.7 + i) * 2, jy = calm ? 0 : Math.cos(clock * 1.3 + i * 1.7) * 2;
+    const x = bx + 6 + Math.abs(hx) * (bw - 12) + jx, y = wy + 6 + Math.abs(hy) * (by + bh - wy - 22) + jy;
+    bg.beginPath(); bg.arc(x, y, 2.2, 0, 7); bg.fill();
+  }
+  // undissolved crystals at the bottom: pile height ∝ excess
+  const ex = Math.min(st.excess, YMAX), m = Math.round(ex / YMAX * 60);
+  for (let i = 0; i < m; i++) {
+    const row = Math.floor(i / 12), col = i % 12, cw = (bw - 12) / 12;
+    const x = bx + 6 + col * cw + (row % 2 ? cw / 2 : 0), y = by + bh - 6 - row * 6;
+    bg.fillStyle = s.c; bg.globalAlpha = 0.9; bg.fillRect(x, y - 4, Math.min(cw - 2, 7), 5);
+  }
+  bg.globalAlpha = 1;
+  // labels beside the beaker
+  const lx = bx + bw + 16, f = (t, y, c, w = 500, sz = 12) => { bg.font = `${w} ${sz}px "IBM Plex Sans",sans-serif`; bg.fillStyle = c; bg.textAlign = 'left'; bg.textBaseline = 'middle'; bg.fillText(t, lx, y); };
+  f(`${fmtT(T)}`, by + 10, '#E3E6EB', 600, 13);
+  f(`added ${fmt(G)} g`, by + 32, '#8A93A1');
+  f(`dissolved ${fmt(st.dissolved)} g`, by + 52, s.c);
+  f(st.excess > 0.05 ? `solid ${fmt(st.excess)} g` : 'no solid left', by + 72, st.excess > 0.05 ? '#FF8A80' : '#8A93A1');
+}
+
+/* ---------- panel ---------- */
+const STATE = {
+  un: ['Unsaturated', '#8FD6A8', 'Below the curve: more solute could still dissolve.'],
+  sat: ['Saturated', '#FFD27A', 'On the curve: the most that dissolves at this temperature. Dissolving and crystallizing go on at the same rate.'],
+  over: ['Above the curve', '#FF8A80', 'More solute than can stay dissolved. Normally the extra sits on the bottom as solid (a saturated solution plus solid). Cooled very carefully with no solid present, it can stay dissolved for a while as a supersaturated solution — until a seed crystal sets it off.']
+};
+function renderPanel() {
+  $('#sSubs').innerHTML = SUBS.map(q => `<button type="button" role="radio" aria-checked="${q.id === S.s}" data-s="${q.id}" style="--c:${q.c}"><i></i>${q.f}<small>${fmt(sol(q, 20))} g at 20 °C</small></button>`).join('');
+  $('#sAll').checked = S.all;
+  renderPoint();
+  const s = sub(), up = sol(s, 100) > sol(s, 0);
+  $('#sHow').innerHTML = `<b>How to read it.</b> A point on a curve is a saturated solution. For most solids, like ${'KNO<sub>3</sub>'}, solubility rises with temperature, so cooling a hot saturated solution makes crystals come out (recrystallization) — the amount is the drop in the curve. NaCl barely changes. Ce<sub>2</sub>(SO<sub>4</sub>)<sub>3</sub> and gases such as NH<sub>3</sub> become <i>less</i> soluble when heated: gas molecules escape more easily from warm water.` + (up ? '' : ` <b>${s.f}</b> is one of the ones whose solubility falls with temperature.`);
+}
+function renderPoint() {
+  const s = sub(), st = state(), [name, col, why] = STATE[st.sat];
+  $('#sTitle').innerHTML = s.f;
+  $('#sSub').innerHTML = `<b>${fmtT(T)}</b> · <b>${fmt(G)} g</b> in 100 g water · solubility <b>${fmt(st.S0)} g</b>`;
+  $('#sChip').textContent = name; $('#sChip').style.color = col;
+  const rows = [
+    ['State', `<span style="color:${col}">${name}</span><small>${why}</small>`],
+    ['Solubility here', `${fmt(st.S0)} g / 100 g water<small>${(st.S0 / (100 + st.S0) * 100).toFixed(1)} % by mass when saturated</small>`],
+    [st.sat === 'un' ? 'Can still dissolve' : 'Undissolved', st.sat === 'un' ? `${fmt(st.S0 - G)} g more` : `${fmt(st.excess)} g`],
+    ['Trend', sol(s, 100) > sol(s, 0) + 5 ? 'More soluble when hot' : sol(s, 100) < sol(s, 0) - 5 ? 'Less soluble when hot' : 'Hardly changes with temperature']
+  ];
+  $('#sRead').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+}
+function setPoint(t, gr, keepLog) {
+  T = Math.max(0, Math.min(100, t)); G = Math.max(0, Math.min(YMAX, gr));
+  S.pt[S.s] = [Math.round(T * 10) / 10, Math.round(G * 10) / 10]; save();
+  if (!keepLog) { $('#sLog').innerHTML = ''; anim = null; }
+  renderPoint(); draw(); drawBeaker();
+}
+function goTo(t1) {
+  const s = sub(), t0 = T, before = state();
+  if (Math.abs(t1 - t0) < 0.5) return;
+  anim = {t0, t1, G, u: 0, trail: [[t0, G]], s0: before.excess};
+  $('#sLog').innerHTML = '';
+  if (calm) { anim.u = 1; T = t1; finishAnim(); }
+}
+function finishAnim() {
+  const st = state(), d = st.excess - anim.s0;
+  const s = sub();
+  $('#sLog').innerHTML = `${fmtT(anim.t0)} → ${fmtT(anim.t1)} with ${fmt(anim.G)} g of ${s.f}: ` +
+    (d > 0.05 ? `<b style="color:#FF8A80">${fmt(d)} g crystallizes out</b> (${fmt(sol(s, anim.t0) > anim.G ? anim.G : sol(s, anim.t0))} → ${fmt(st.dissolved)} g dissolved).`
+      : d < -0.05 ? `<b style="color:#8FD6A8">${fmt(-d)} g of solid dissolves</b>.` : 'nothing comes out of solution.');
+  S.pt[S.s] = [T, G]; save(); renderPoint();
+  const tr = anim.trail; anim = {trail: tr, done: true};
+}
+function frame(now) {
+  raf = 0;
+  if ($('#sApp').hidden) return;
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now;
+  if (!calm) clock += dt;
+  if (anim && !anim.done && anim.u < 1) {
+    anim.u = Math.min(1, anim.u + dt / 3);
+    T = anim.t0 + (anim.t1 - anim.t0) * anim.u;
+    anim.trail.push([T, Math.min(anim.G, sol(sub(), T))]);
+    renderPoint();
+    if (anim.u >= 1) finishAnim();
+  }
+  draw(); drawBeaker();
+  raf = requestAnimationFrame(frame);
+}
+function fromEvent(e) {
+  const r = cv.getBoundingClientRect(), k = box();
+  return [(e.clientX - r.left - k.x) / k.w * 100, (1 - (e.clientY - r.top - k.y) / k.h) * YMAX];
+}
+function bind() {
+  cv = $('#sCanvas'); g = cv.getContext('2d'); bk = $('#sBeaker'); bg = bk.getContext('2d');
+  cv.tabIndex = 0;
+  cv.addEventListener('pointerdown', e => {
+    const r = cv.getBoundingClientRect(), k = box(), x = e.clientX - r.left, y = e.clientY - r.top;
+    if (x < k.x - 12 || x > k.x + k.w + 12 || y < k.y - 12 || y > k.y + k.h + 12) return;
+    // clicking near another curve's line selects that substance
+    if (S.all) {
+      const [t, gr] = fromEvent(e), near = SUBS.filter(q => q !== sub()).map(q => [q, Math.abs(Y(k, Math.min(YMAX, sol(q, t))) - y)]).sort((a, b) => a[1] - b[1])[0];
+      const dSel = Math.abs(Y(k, Math.min(YMAX, sol(sub(), t))) - y), dPt = Math.hypot(X(k, T) - x, Y(k, G) - y);
+      if (near && near[1] < 6 && near[1] < dSel && dPt > 14) { S.s = near[0].id; save(); const [pt, pg] = ptOf(S.s); T = pt; G = pg; anim = null; $('#sLog').innerHTML = ''; renderPanel(); }
+    }
+    drag = true; cv.setPointerCapture(e.pointerId); const [t, gr] = fromEvent(e); setPoint(t, gr); e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => { if (drag) { const [t, gr] = fromEvent(e); setPoint(t, gr); } });
+  const end = () => { drag = false; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  cv.addEventListener('keydown', e => {
+    const d = e.shiftKey ? 5 : 1;
+    if (e.key === 'ArrowLeft') setPoint(T - d, G); else if (e.key === 'ArrowRight') setPoint(T + d, G);
+    else if (e.key === 'ArrowUp') setPoint(T, G + d); else if (e.key === 'ArrowDown') setPoint(T, G - d); else return;
+    e.preventDefault();
+  });
+  $('#sSubs').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S.s = b.dataset.s; save(); [T, G] = ptOf(S.s); anim = null; $('#sLog').innerHTML = ''; renderPanel(); draw(); });
+  $('#sAll').addEventListener('change', e => { S.all = e.target.checked; save(); draw(); });
+  $('#sGo').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.t === 'sat') { setPoint(T, Math.min(YMAX, sol(sub(), T))); return; }
+    goTo(+b.dataset.t);
+  });
+  new ResizeObserver(resize).observe($('#sViewer'));
+  new ResizeObserver(resize).observe(bk);
+}
+window.initSolubility = function () {
+  if (!inited) { inited = true; bind(); [T, G] = ptOf(S.s); renderPanel(); }
+  resize();
+  if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+};
+})();
+</script>
 <script>
 /* ---------- site map + router ----------
    One registry drives the header nav, the home page and routing.
@@ -9218,7 +9527,10 @@ window.initDissolve = function () {
     {name: 'Solutions', blurb: 'Why a solute dissolves — or doesn’t', pages: [
       {id: 'dissolve', app: '#dApp', nav: 'Dissolving', title: 'Dissolving', init: () => window.initDissolve(),
        desc: 'Watch dissolving as three steps — separate the solute, separate the solvent, mix — with the enthalpy of each. Set the solute–solute, solvent–solvent and solute–solvent attractions yourself or pick NaCl, NH₄NO₃, CaCl₂, ethanol, I₂ or oil.',
-       tags: ['Three steps', 'Enthalpy of solution', 'Like dissolves like']}
+       tags: ['Three steps', 'Enthalpy of solution', 'Like dissolves like']},
+      {id: 'solubility', app: '#sApp', nav: 'Solubility curves', title: 'Solubility Curves', init: () => window.initSolubility(),
+       desc: 'Solubility against temperature for KNO₃, NaCl, KClO₃, Ce₂(SO₄)₃, NH₃ and more. Drag a point to see unsaturated, saturated and supersaturated, watch a beaker, and cool a solution to see how much crystallizes.',
+       tags: ['Saturated', 'Supersaturated', 'Crystallization']}
     ]},
     {name: 'Thermochemistry', blurb: 'Measuring the heat of a reaction', pages: [
       {id: 'calorimeter', app: '#cApp', nav: 'Bomb calorimeter', title: 'Bomb Calorimeter', init: () => window.initCalorimeter(),
