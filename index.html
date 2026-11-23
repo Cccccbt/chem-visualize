@@ -723,17 +723,9 @@ body.side-off .app > .panel{display:none}
 .dhd{display:block;width:100%;height:auto;user-select:none}
 .dhd text{font-family:var(--f-mono)}
 .readout dd .dver{display:block;font:600 13.5px/1.35 var(--f-body)}
-.dcount{display:flex;flex-direction:column;gap:5px}
-.dcrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12.5px}
-.dcrow .bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}
-.dcrow .bar i{display:block;height:100%;border-radius:4px;background:var(--c);transition:width .25s}
-.dcrow b{font:500 12px var(--f-mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.dcrow b small{color:var(--muted);font-size:11px;margin-left:4px}
 #dLegend em{font-style:normal}
 #dLegend sub{font-size:.75em;vertical-align:-.25em;line-height:0}
-.dspark{display:block;width:100%;height:84px;margin-top:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px}
 @media (max-width:760px){ #dViewer{height:62svh;min-height:380px} #dViewer .hud-tr{top:auto;bottom:12px;left:12px;right:12px;justify-content:flex-end;flex-wrap:wrap} #dViewer .hud-bl{display:none} }
-@media (prefers-reduced-motion:reduce){ .dcrow .bar i{transition:none} }
 </style>
 
 <header class="site">
@@ -1752,16 +1744,12 @@ body.side-off .app > .panel{display:none}
 </div>
 <div class="app" id="dApp" hidden>
   <main class="viewer" id="dViewer">
-    <canvas id="dCanvas" role="img" aria-label="Animated particles: a solute dissolving in a solvent"></canvas>
+    <canvas id="dCanvas" role="img" aria-label="Animated particles: the three steps of dissolving"></canvas>
     <div class="hud hud-tl">
       <div class="qtitle"><div class="tprop" id="dTitle"></div><div class="qtuple" id="dSub"></div></div>
       <div class="chip" id="dChip" role="status"></div>
     </div>
     <div class="hud hud-tr">
-      <div class="seg ivw" role="radiogroup" aria-label="View" id="dView">
-        <button type="button" role="radio" data-v="steps" title="The three steps of dissolving, one at a time">Three steps</button>
-        <button type="button" role="radio" data-v="sim" title="Many particles moving and attracting each other">Live mixing</button>
-      </div>
       <button class="hbtn" id="dPlay" type="button">Pause</button>
       <button class="hbtn" id="dReset" type="button">Replay</button>
     </div>
@@ -1806,29 +1794,8 @@ body.side-off .app > .panel{display:none}
       <dl class="readout" id="dRead" style="margin-top:10px"></dl>
     </section>
 
-    <section aria-label="Live mixing" class="ctl" id="dSimBox">
-      <h2 class="sec-h" style="margin-bottom:0">Live mixing</h2>
-      <div class="slider">
-        <label for="dT"><span>Temperature</span><output id="dTOut"></output></label>
-        <input type="range" id="dT" min="0" max="100" step="1">
-      </div>
-      <div class="toggles">
-        <label class="sw"><input type="checkbox" id="dLines">Attraction lines</label>
-      </div>
-      <div class="seg three" role="radiogroup" aria-label="Playback speed" id="dSpeed">
-        <button type="button" role="radio" data-s="slow">Slow</button>
-        <button type="button" role="radio" data-s="normal">Normal</button>
-        <button type="button" role="radio" data-s="fast">Fast</button>
-      </div>
-      <div>
-        <h3 class="dh3">Attractions right now <span class="mhint">pairs touching · change since the start</span></h3>
-        <div class="dcount" id="dCount"></div>
-        <canvas class="dspark" id="dSpark" role="img" aria-label="Number of each kind of attraction over time"></canvas>
-      </div>
-    </section>
-
     <p class="note" id="dHow"></p>
-    <p class="note"><b>The model.</b> Strengths are on a relative 1–10 scale, and the enthalpy bars use the same relative units: ΔH₁ = solute–solute, ΔH₂ = solvent–solvent, ΔH₃ = −2 × solute–solvent (break one solute–solute and one solvent–solvent contact, and two solute–solvent contacts can form in their place). Live mixing is a 2D Lennard-Jones simulation with the same three strengths, with the differences exaggerated so the outcome shows in seconds. Measured ΔH<sub>soln</sub> values are at 25 °C, infinite dilution.</p>
+    <p class="note"><b>The model.</b> Strengths are on a relative 1–10 scale, and the enthalpy bars use the same relative units: ΔH₁ = solute–solute, ΔH₂ = solvent–solvent, ΔH₃ = −2 × solute–solvent (break one solute–solute and one solvent–solvent contact, and two solute–solvent contacts can form in their place). Measured ΔH<sub>soln</sub> values are at 25 °C, infinite dilution.</p>
   </aside>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -8829,114 +8796,6 @@ const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, se
 const MINUS = '−';
 const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function createMix(o) {
-  const Lx = o.Lx, Ly = o.Ly, rc = 2.5, rc2 = rc * rc;
-  let seed = o.seed || 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const xs = [], ys = [], ts = [];
-  // solute: a hexagonal crystal in the middle
-  const cx = Lx * 0.5, cy = Ly * 0.5, a = 1.09, R = o.R || 3;
-  for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
-    if (Math.abs(q + r) > R) continue;
-    xs.push(cx + a * (q + r / 2)); ys.push(cy + a * r * Math.sqrt(3) / 2); ts.push(0);
-  }
-  const nA = xs.length;
-  // solvent: a lattice that fills the rest of the box at density ρ
-  const rho = o.rho || 0.8;
-  const ny = Math.max(2, 2 * Math.round(Math.sqrt(rho * Ly * Ly * 2 / Math.sqrt(3)) / 2)), nx = Math.round(rho * Lx * Ly / ny);
-  const ax = Lx / nx, ay = Ly / ny;
-  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    const x = (i + 0.25 + (j % 2) * 0.5) * ax, y = (j + 0.5) * ay;
-    let ok = true;
-    for (let k = 0; k < nA; k++) { const dx = xs[k] - x, dy = ys[k] - y; if (dx * dx + dy * dy < 1.02) { ok = false; break; } }
-    if (ok) { xs.push(x); ys.push(y); ts.push(1); }
-  }
-  const N = xs.length;
-  const x = Float64Array.from(xs), y = Float64Array.from(ys), t = Uint8Array.from(ts);
-  const vx = new Float64Array(N), vy = new Float64Array(N), fx = new Float64Array(N), fy = new Float64Array(N);
-  const S = {N, nA, Lx, Ly, x, y, t, vx, vy, fx, fy, T: o.T, E: [0, 0, 0], shift: [0, 0, 0]};
-  let mx = 0, my = 0;
-  for (let i = 0; i < N; i++) { const s = Math.sqrt(S.T); vx[i] = (rnd() * 2 - 1) * s * 1.7; vy[i] = (rnd() * 2 - 1) * s * 1.7; mx += vx[i]; my += vy[i]; }
-  for (let i = 0; i < N; i++) { vx[i] -= mx / N; vy[i] -= my / N; }   // no drift of the whole box
-  // cell list
-  const cnx = Math.max(3, Math.floor(Lx / rc)), cny = Math.max(3, Math.floor(Ly / rc));
-  const head = new Int32Array(cnx * cny), next = new Int32Array(N);
-  S.setEps = (eAA, eBB, eAB) => { S.E = [eAA, eAB, eBB]; const r6 = 1 / Math.pow(rc2, 3); S.shift = S.E.map(e => 4 * e * (r6 * r6 - r6)); };
-  function build() {
-    head.fill(-1);
-    for (let i = 0; i < N; i++) {
-      const c = Math.min(cnx - 1, Math.floor(x[i] / Lx * cnx)) + cnx * Math.min(cny - 1, Math.floor(y[i] / Ly * cny));
-      next[i] = head[c]; head[c] = i;
-    }
-  }
-  // visit each pair within rc once: cb(i, j, dx, dy, r2)
-  function pairs(cb) {
-    build();
-    const hx = Lx / 2, hy = Ly / 2;
-    for (let cyi = 0; cyi < cny; cyi++) for (let cxi = 0; cxi < cnx; cxi++) {
-      const c = cxi + cnx * cyi;
-      for (let i = head[c]; i >= 0; i = next[i]) {
-        // same cell (j after i in the list) + 4 forward neighbours
-        for (let j = next[i]; j >= 0; j = next[j]) one(i, j);
-        for (let k = 0; k < 4; k++) {
-          const ox = [1, 1, 0, -1][k], oy = [0, 1, 1, 1][k];
-          const nc = ((cxi + ox + cnx) % cnx) + cnx * ((cyi + oy + cny) % cny);
-          for (let j = head[nc]; j >= 0; j = next[j]) one(i, j);
-        }
-      }
-    }
-    function one(i, j) {
-      let dx = x[j] - x[i], dy = y[j] - y[i];
-      if (dx > hx) dx -= Lx; else if (dx < -hx) dx += Lx;
-      if (dy > hy) dy -= Ly; else if (dy < -hy) dy += Ly;
-      const r2 = dx * dx + dy * dy;
-      if (r2 < rc2) cb(i, j, dx, dy, r2);
-    }
-  }
-  let U = 0;
-  function forces() {
-    fx.fill(0); fy.fill(0); U = 0;
-    const E = S.E, sh = S.shift;
-    pairs((i, j, dx, dy, r2) => {
-      const k = t[i] + t[j], e = E[k];
-      const ir2 = 1 / Math.max(r2, 0.6), ir6 = ir2 * ir2 * ir2;
-      const f = 24 * e * ir2 * ir6 * (2 * ir6 - 1);
-      fx[i] -= f * dx; fy[i] -= f * dy; fx[j] += f * dx; fy[j] += f * dy;
-      U += 4 * e * (ir6 * ir6 - ir6) - sh[k];
-    });
-  }
-  S.step = (dt, n) => {
-    for (let s = 0; s < n; s++) {
-      for (let i = 0; i < N; i++) {
-        vx[i] += fx[i] * dt / 2; vy[i] += fy[i] * dt / 2;
-        x[i] += vx[i] * dt; y[i] += vy[i] * dt;
-        if (x[i] < 0) x[i] += Lx; else if (x[i] >= Lx) x[i] -= Lx;
-        if (y[i] < 0) y[i] += Ly; else if (y[i] >= Ly) y[i] -= Ly;
-      }
-      forces();
-      let k2 = 0;
-      for (let i = 0; i < N; i++) { vx[i] += fx[i] * dt / 2; vy[i] += fy[i] * dt / 2; k2 += vx[i] * vx[i] + vy[i] * vy[i]; }
-      // weak velocity-rescaling thermostat
-      const Tn = k2 / (2 * N), lam = Math.sqrt(1 + 0.04 * (S.T / Math.max(Tn, 1e-6) - 1));
-      for (let i = 0; i < N; i++) { vx[i] *= lam; vy[i] *= lam; }
-    }
-  };
-  // contacts within rcon: counts [AA, AB, BB], list of pairs, and solute particles with no solute neighbour
-  S.contacts = (rcon = 1.45, list) => {
-    const c = [0, 0, 0], r2c = rcon * rcon, nAA = new Uint8Array(N);
-    if (list) list.length = 0;
-    pairs((i, j, dx, dy, r2) => {
-      if (r2 > r2c) return;
-      const k = t[i] + t[j]; c[k]++;
-      if (k === 0) { nAA[i]++; nAA[j]++; }
-      if (list) list.push(i, j, k);
-    });
-    let free = 0; for (let i = 0; i < N; i++) if (!t[i] && !nAA[i]) free++;
-    return {AA: c[0], AB: c[1], BB: c[2], free, nAA};
-  };
-  S.energy = () => U;
-  S.forces = forces;
-  return S;
-}
 
 /* ---------- substances ---------- */
 const COL = {A: '#F2A25C', B: '#7FB2FF', AB: '#8FD6A8', hot: '#FF8A80', key: '#FFD27A', H: '#E3E6EB'};
@@ -8959,15 +8818,13 @@ const EX = [
 const GENERIC_NOTE = 'Set your own strengths, or pick a real pair. Rough guide: 1–3 London dispersion, 4–6 dipole–dipole and hydrogen bonds, 7–10 ionic bonds and ion–dipole attractions.';
 
 /* ---------- state ---------- */
-const DEF = {view: 'steps', s: [6, 6, 6], ex: null, T: 50, speed: 'normal', lines: true};
+const DEF = {s: [6, 6, 6], ex: null};
 const S = Object.assign({}, DEF);
 try { Object.assign(S, JSON.parse(ls.get('aov.dissolve') || '{}')); } catch (e) {}
-if (!['steps', 'sim'].includes(S.view)) S.view = 'steps';
 if (!Array.isArray(S.s) || S.s.length !== 3 || S.s.some(v => !(v >= 1 && v <= 10))) S.s = DEF.s.slice();
 S.s = S.s.map(v => Math.round(v));
 if (S.ex && !EX.some(e => e.id === S.ex)) S.ex = null;
-if (!['slow', 'normal', 'fast'].includes(S.speed)) S.speed = 'normal';
-if (!(S.T >= 0 && S.T <= 100)) S.T = 50;
+delete S.view; delete S.T; delete S.speed; delete S.lines;
 const save = () => ls.set('aov.dissolve', JSON.stringify(S));
 const ex = () => EX.find(e => e.id === S.ex) || null;
 
@@ -8999,7 +8856,6 @@ const soluble = () => dH().net <= 3;
 
 /* ---------- canvas & layout ---------- */
 let inited = false, cv, g, W = 0, H = 0, dpr = 1, raf = 0, last = 0, clock = 0;
-let sp, sg, SW = 0, SH = 0;   // sparkline canvas
 function area() {
   const top = W < 760 ? 96 : 112, bot = W < 760 ? 64 : 52;
   return {x: 18, y: top, w: Math.max(60, W - 36), h: Math.max(60, H - top - bot)};
@@ -9180,102 +9036,6 @@ function drawSteps() {
   }
 }
 
-/* ---------- live mixing ---------- */
-let sim = null, base = null, cur = null, hist = [], histT = 0, links = [];
-const simT = () => 0.36 + 0.28 * S.T / 100;
-const SUB = {slow: 4, normal: 16, fast: 40};
-function simEps() {
-  if (!sim) return;
-  const [a, b, c] = S.s, eps = v => 0.35 + 0.06 * v;
-  sim.setEps(eps(a), eps(b), Math.max(0.05, (eps(a) + eps(b)) / 2 - 0.25 * ((a + b) / 2 - c)));
-  sim.T = simT();
-}
-function simReset() {
-  const k = area(), asp = k.w / k.h;
-  let Lx, Ly;
-  if (asp >= 1) { Ly = 13; Lx = Math.min(24, Math.max(13, 13 * asp)); } else { Lx = 12; Ly = Math.min(22, Math.max(12, 12 / asp)); }
-  sim = createMix({Lx, Ly, T: simT(), rho: 0.8, R: 3});
-  simEps(); sim.forces();
-  base = cur = sim.contacts(1.45); hist = [{AA: 0, AB: 0, BB: 0}]; histT = 0;
-  renderSim();
-}
-function simBox() {
-  const k = area(), s = Math.min(k.w / sim.Lx, k.h / sim.Ly);
-  return {s, x: k.x + (k.w - sim.Lx * s) / 2, y: k.y + (k.h - sim.Ly * s) / 2, w: sim.Lx * s, h: sim.Ly * s};
-}
-function drawSim() {
-  if (!sim) simReset();
-  const b = simBox(), {x, y, t, N, Lx, Ly} = sim, r = b.s * 0.42;
-  g.save();
-  g.beginPath(); g.roundRect ? g.roundRect(b.x, b.y, b.w, b.h, 10) : g.rect(b.x, b.y, b.w, b.h);
-  g.fillStyle = 'rgba(127,178,255,.035)'; g.fill(); g.strokeStyle = '#252C37'; g.lineWidth = 1; g.stroke();
-  g.clip();
-  if (S.lines) {
-    const [sAA, sBB, sAB] = S.s, col = [COL.A, COL.AB, COL.B], st = [sAA, sAB, sBB];
-    for (let k = 0; k < 3; k++) {
-      g.beginPath();
-      for (let n = 0; n < links.length; n += 3) {
-        if (links[n + 2] !== k) continue;
-        const i = links[n], j = links[n + 1];
-        let dx = x[j] - x[i], dy = y[j] - y[i];
-        if (dx > Lx / 2) dx -= Lx; else if (dx < -Lx / 2) dx += Lx;
-        if (dy > Ly / 2) dy -= Ly; else if (dy < -Ly / 2) dy += Ly;
-        g.moveTo(b.x + x[i] * b.s, b.y + y[i] * b.s); g.lineTo(b.x + (x[i] + dx) * b.s, b.y + (y[i] + dy) * b.s);
-      }
-      g.globalAlpha = k === 1 ? 0.9 : 0.55; g.strokeStyle = col[k]; g.lineWidth = lw(st[k]) * Math.min(1, b.s / 30); g.stroke();
-    }
-    g.globalAlpha = 1;
-  }
-  // solvent first, solute on top; draw wrapped copies at the edges
-  for (const pass of [1, 0]) {
-    g.fillStyle = pass ? COL.B : COL.A;
-    g.beginPath();
-    for (let i = 0; i < N; i++) {
-      if (t[i] !== pass) continue;
-      for (const ox of [0, x[i] < 0.6 ? Lx : x[i] > Lx - 0.6 ? -Lx : null]) for (const oy of [0, y[i] < 0.6 ? Ly : y[i] > Ly - 0.6 ? -Ly : null]) {
-        if (ox === null || oy === null) continue;
-        const px = b.x + (x[i] + ox) * b.s, py = b.y + (y[i] + oy) * b.s;
-        g.moveTo(px + r, py); g.arc(px, py, r, 0, 7);
-      }
-    }
-    g.globalAlpha = pass ? 0.8 : 1; g.fill();
-  }
-  // mark solute particles that are fully surrounded by solvent
-  if (cur && cur.nAA) {
-    g.globalAlpha = 1; g.strokeStyle = COL.AB; g.lineWidth = Math.max(1.5, b.s * 0.09); g.beginPath();
-    for (let i = 0; i < N; i++) if (!t[i] && !cur.nAA[i]) { const px = b.x + x[i] * b.s, py = b.y + y[i] * b.s; g.moveTo(px + r * 1.12, py); g.arc(px, py, r * 1.12, 0, 7); }
-    g.stroke();
-  }
-  g.restore();
-}
-function simTick(dt) {
-  if (!sim) simReset();
-  if (playing) {
-    sim.step(0.005, SUB[S.speed]);
-    histT += dt;
-  }
-  cur = sim.contacts(1.45, S.lines ? links : null);
-  if (histT >= 0.25) {
-    histT = 0;
-    hist.push({AA: cur.AA - base.AA, AB: cur.AB - base.AB, BB: cur.BB - base.BB});
-    if (hist.length > 240) hist.shift();
-    renderSim();
-  }
-}
-function drawSpark() {
-  if (!sg || !SW) return;
-  sg.setTransform(dpr, 0, 0, dpr, 0, 0); sg.clearRect(0, 0, SW, SH);
-  const m = Math.max(10, ...hist.map(h => Math.max(Math.abs(h.AA), Math.abs(h.AB), Math.abs(h.BB))));
-  const mid = SH / 2, Y = v => mid - v / m * (SH / 2 - 8), X = i => 6 + i / 239 * (SW - 12);
-  sg.strokeStyle = '#252C37'; sg.lineWidth = 1; sg.beginPath(); sg.moveTo(6, mid); sg.lineTo(SW - 6, mid); sg.stroke();
-  sg.font = '500 10px "IBM Plex Mono",monospace'; sg.fillStyle = '#8A93A1'; sg.textBaseline = 'middle'; sg.textAlign = 'right';
-  sg.fillText('formed', SW - 8, 10); sg.fillText('broken', SW - 8, SH - 10);
-  for (const [key, col] of [['BB', COL.B], ['AA', COL.A], ['AB', COL.AB]]) {
-    sg.beginPath(); hist.forEach((h, i) => i ? sg.lineTo(X(i), Y(h[key])) : sg.moveTo(X(i), Y(h[key])));
-    sg.strokeStyle = col; sg.lineWidth = 1.8; sg.stroke();
-  }
-}
-
 /* ---------- panel ---------- */
 function renderSliders() {
   ['AA', 'BB', 'AB'].forEach((k, i) => { $('#d' + k).value = S.s[i]; $(`#d${k}Out`).textContent = `${S.s[i]} · ${word(S.s[i])}`; });
@@ -9290,13 +9050,13 @@ function renderSteps() {
     [2, 'Separate the solvent', `Break solvent–solvent attractions${f('BB')} to open up room`, h.h2],
     [3, 'Mix', `Solute–solvent attractions form${f('AB')}`, h.h3]
   ];
-  $('#dSteps').innerHTML = rows.map(([n, t, s, v]) => `<button type="button" data-n="${n}"${S.view === 'steps' && stage === n ? ' aria-current="step"' : ''}><span class="n">${n}</span><b>${t}</b><small>${s}</small><span class="h ${v > 0 ? 'up' : 'dn'}">ΔH${'₁₂₃'[n - 1]} ${sgn(v)}</span></button>`).join('');
+  $('#dSteps').innerHTML = rows.map(([n, t, s, v]) => `<button type="button" data-n="${n}"${stage === n ? ' aria-current="step"' : ''}><span class="n">${n}</span><b>${t}</b><small>${s}</small><span class="h ${v > 0 ? 'up' : 'dn'}">ΔH${'₁₂₃'[n - 1]} ${sgn(v)}</span></button>`).join('');
 }
 function renderDiag() {
   const h = dH(), E = [0, h.h1, h.h1 + h.h2, h.net];
   const lo = Math.min(0, h.net), hi = Math.max(1, E[2]), y = v => 30 + (hi - v) / (hi - lo) * 168;
   const xs = [[14, 74], [92, 152], [170, 230], [248, 308]], names = ['solute + solvent', 'solute apart', 'both apart', 'solution'];
-  const on = n => S.view !== 'steps' || stage >= n;
+  const on = n => stage >= n;
   let o = `<defs>${['up', 'dn', 'net'].map((k, i) => `<marker id="dAr${k}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${[COL.hot, COL.AB, COL.key][i]}"/></marker>`).join('')}</defs>`;
   o += `<text x="2" y="12" font-size="10" fill="#8A93A1">H (relative)</text>`;
   E.forEach((v, i) => {
@@ -9308,12 +9068,12 @@ function renderDiag() {
       const ax = xs[i + 1][0] + 4, d = E[i + 1] - v, up = d > 0, key = up ? 'up' : 'dn';
       o += `<line x1="${b}" x2="${xs[i + 1][0]}" y1="${y(v)}" y2="${y(v)}" stroke="#5b6577" stroke-dasharray="2 3"/>`;
       const lit2 = on(i + 1);
-      if (Math.abs(d) > 0) o += `<line x1="${ax}" x2="${ax}" y1="${y(v)}" y2="${y(E[i + 1]) + (up ? 3 : -3)}" stroke="${up ? COL.hot : COL.AB}" stroke-width="${lit2 && S.view === 'steps' && stage === i + 1 ? 3.2 : 2}" marker-end="url(#dAr${key})" opacity="${lit2 ? 1 : 0.3}"/>`;
+      if (Math.abs(d) > 0) o += `<line x1="${ax}" x2="${ax}" y1="${y(v)}" y2="${y(E[i + 1]) + (up ? 3 : -3)}" stroke="${up ? COL.hot : COL.AB}" stroke-width="${lit2 && stage === i + 1 ? 3.2 : 2}" marker-end="url(#dAr${key})" opacity="${lit2 ? 1 : 0.3}"/>`;
       o += `<text x="${ax + 5}" y="${(y(v) + y(E[i + 1])) / 2 + 4}" font-size="11" fill="${up ? COL.hot : COL.AB}" opacity="${lit2 ? 1 : 0.35}">ΔH${'₁₂₃'[i]} ${sgn(d)}</text>`;
     }
   });
   // net arrow
-  const nx = 326, litN = S.view !== 'steps' || stage >= 3;
+  const nx = 326, litN = stage >= 3;
   o += `<line x1="74" x2="${nx}" y1="${y(0)}" y2="${y(0)}" stroke="#5b6577" stroke-dasharray="2 3" opacity=".7"/>`;
   if (h.net) o += `<line x1="${nx}" x2="${nx}" y1="${y(0)}" y2="${y(h.net) + (h.net > 0 ? 3 : -3)}" stroke="${COL.key}" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#dArnet)" opacity="${litN ? 1 : 0.3}"/>`;
   o += `<text x="${nx - 4}" y="${Math.min(y(0), y(h.net)) - 8}" font-size="10.5" fill="${COL.key}" text-anchor="end" opacity="${litN ? 1 : 0.35}" paint-order="stroke" stroke="#10141A" stroke-width="4">ΔH<tspan font-size="8" dy="2">soln</tspan><tspan dy="-2"> ${sgn(h.net)}</tspan></text>`;
@@ -9332,11 +9092,9 @@ function renderDiag() {
 function renderLegend() {
   const e = ex(), dot = (c, t) => `<span><i style="background:${c};border-radius:50%"></i><em>${t}</em></span>`, ln = (c, t) => `<span><i style="background:${c};width:14px;height:3px;border-radius:2px"></i><em>${t}</em></span>`;
   const A = e ? (e.kA === 'ion' ? `${e.A} ions (+ / ${MINUS})` : e.A) : 'Solute', B = e ? (e.B === 'water' ? 'H<sub>2</sub>O' : e.B) : 'Solvent';
-  $('#dLegend').innerHTML = dot(COL.A, A) + dot(COL.B, B) + ln(COL.A, 'solute–solute') + ln(COL.B, 'solvent–solvent') + ln(COL.AB, 'solute–solvent') +
-    (S.view === 'sim' ? `<span><i style="background:none;border:1.5px solid ${COL.AB};border-radius:50%"></i>dissolved</span>` : '');
+  $('#dLegend').innerHTML = dot(COL.A, A) + dot(COL.B, B) + ln(COL.A, 'solute–solute') + ln(COL.B, 'solvent–solvent') + ln(COL.AB, 'solute–solvent');
 }
 function renderStage() {
-  if (S.view !== 'steps') return;
   const st = STAGE[stage], v = verdict(dH().net);
   if (stage === 4) {
     $('#dTitle').textContent = soluble() ? 'Solution' : 'It doesn’t stay mixed';
@@ -9348,50 +9106,29 @@ function renderStage() {
   }
   renderSteps(); renderDiag(); renderControls();
 }
-function renderSim() {
-  if (S.view !== 'sim' || !sim || !cur) return;
-  $('#dTitle').textContent = 'Live mixing';
-  const broken = Math.max(0, Math.round(100 * (1 - cur.AA / base.AA)));
-  $('#dSub').innerHTML = `<b>${broken}%</b> of solute–solute contacts broken`;
-  $('#dChip').hidden = false;
-  const st = broken >= 55 ? ['Dissolving', COL.AB] : hist.length > 60 && broken < 45 ? ['Staying together — not dissolving', COL.hot] : hist.length > 60 ? ['Mixing slowly', COL.key] : ['Watching…', '#8A93A1'];
-  $('#dChip').textContent = st[0]; $('#dChip').style.color = st[1];
-  const row = (c, t, n, d) => `<div class="dcrow"><span style="display:flex;align-items:center;gap:7px"><i style="width:10px;height:3px;border-radius:2px;background:${c}"></i>${t}</span><b>${n}<small>${d > 0 ? '+' + d : d < 0 ? MINUS + -d : '±0'}</small></b></div>`;
-  $('#dCount').innerHTML = row(COL.A, 'Solute–solute', cur.AA, cur.AA - base.AA) + row(COL.B, 'Solvent–solvent', cur.BB, cur.BB - base.BB) + row(COL.AB, 'Solute–solvent', cur.AB, cur.AB - base.AB) +
-    `<div class="dcrow"><span style="display:flex;align-items:center;gap:7px"><i style="width:9px;height:9px;border-radius:50%;border:1.5px solid ${COL.AB}"></i>Solute particles fully surrounded by solvent</span><b>${cur.free} / ${sim.nA}</b></div>`;
-  drawSpark();
-}
 function renderControls() {
-  const steps = S.view === 'steps';
-  $('#dPlay').textContent = playing ? 'Pause' : (steps && stage === 4 && prog >= 1 ? 'Play again' : 'Play');
-  $('#dReset').textContent = steps ? 'Replay' : 'Restart';
-  $('#dReset').hidden = steps && stage === 4 && prog >= 1 && !playing;
+  const end = stage === 4 && prog >= 1;
+  $('#dPlay').textContent = playing ? 'Pause' : end ? 'Play again' : 'Play';
+  $('#dReset').hidden = end && !playing;
 }
 function renderAll() {
-  document.querySelectorAll('#dView button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.v === S.view)));
-  document.querySelectorAll('#dSpeed button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.s === S.speed)));
-  $('#dLines').checked = S.lines;
-  $('#dT').value = S.T;
-  const tw = S.T < 20 ? 'cold' : S.T < 42 ? 'cool' : S.T <= 58 ? 'room temperature' : S.T < 80 ? 'warm' : 'hot';
-  $('#dTOut').textContent = tw;
-  $('#dSimBox').hidden = S.view !== 'sim';
   renderSliders(); renderLegend(); renderSteps(); renderDiag();
   $('#dHow').innerHTML = '<b>How it works.</b> Dissolving is a swap of attractions. Pulling the solute particles apart (ΔH₁) and opening holes in the solvent (ΔH₂) both cost energy; letting solute and solvent attract each other (ΔH₃) gives energy back, and ΔH<sub>soln</sub> = ΔH₁ + ΔH₂ + ΔH₃. When the new solute–solvent attractions are about as strong as the ones broken, the solute dissolves — “like dissolves like”. Mixing also raises the entropy, so a slightly endothermic solute (NaCl, NH₄NO₃) still dissolves, but a strongly endothermic one (oil in water) does not.';
-  if (S.view === 'steps') renderStage(); else { renderSim(); renderControls(); }
+  renderStage();
 }
 
 /* ---------- loop & events ---------- */
 function draw() {
   if (!g) return;
   g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  if (S.view === 'steps') drawSteps(); else drawSim();
+  drawSteps();
 }
 function frame(now) {
   raf = 0;
   if ($('#dApp').hidden) return;
   const dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now;
   if (!calm) clock += dt;
-  if (S.view === 'steps') stepTimeline(dt); else simTick(dt);
+  stepTimeline(dt);
   draw();
   raf = requestAnimationFrame(frame);
 }
@@ -9399,15 +9136,13 @@ function resize() {
   const r = $('#dViewer').getBoundingClientRect();
   dpr = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height;
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  const sr = sp.getBoundingClientRect(); SW = sr.width; SH = sr.height;
-  sp.width = Math.round(SW * dpr); sp.height = Math.round(SH * dpr);
-  layout(); draw(); drawSpark();
+  layout(); draw();
 }
 function strengthsChanged() {
-  save(); layout(); simEps(); renderAll();
+  save(); layout(); renderAll();
 }
 function bind() {
-  cv = $('#dCanvas'); g = cv.getContext('2d'); sp = $('#dSpark'); sg = sp.getContext('2d');
+  cv = $('#dCanvas'); g = cv.getContext('2d');
   ['AA', 'BB', 'AB'].forEach((k, i) => $('#d' + k).addEventListener('input', e => {
     S.s[i] = +e.target.value; S.ex = null; strengthsChanged();
   }));
@@ -9415,31 +9150,19 @@ function bind() {
     const b = e.target.closest('button'); if (!b) return;
     S.ex = b.dataset.x || null; const x = ex(); if (x) S.s = x.s.slice();
     strengthsChanged();
-    if (S.view === 'steps') goStage(0); else simReset();
-    playing = true; renderControls();
+    goStage(0); playing = true; renderControls();
   });
   $('#dSteps').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (S.view !== 'steps') { S.view = 'steps'; save(); renderAll(); }
     goStage(+b.dataset.n, true);
   });
-  $('#dView').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b || b.dataset.v === S.view) return;
-    S.view = b.dataset.v; save(); playing = true;
-    if (S.view === 'steps') goStage(0); else if (!sim) simReset();
-    renderAll(); draw();
-  });
   $('#dPlay').addEventListener('click', () => {
-    if (S.view === 'steps' && stage === 4 && prog >= 1 && !playing) { goStage(0); playing = true; }
+    if (stage === 4 && prog >= 1 && !playing) { goStage(0); playing = true; }
     else { playing = !playing; stopAt = -1; }
     renderControls();
   });
-  $('#dReset').addEventListener('click', () => { playing = true; if (S.view === 'steps') goStage(0); else simReset(); renderControls(); });
-  $('#dT').addEventListener('input', e => { S.T = +e.target.value; save(); simEps(); renderAll(); });
-  $('#dSpeed').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.speed = b.dataset.s; save(); renderAll(); } });
-  $('#dLines').addEventListener('change', e => { S.lines = e.target.checked; save(); });
+  $('#dReset').addEventListener('click', () => { playing = true; goStage(0); renderControls(); });
   new ResizeObserver(resize).observe($('#dViewer'));
-  new ResizeObserver(resize).observe(sp);
 }
 window.initDissolve = function () {
   if (!inited) { inited = true; bind(); playing = true; stage = 0; prog = 1; renderAll(); }
@@ -9494,7 +9217,7 @@ window.initDissolve = function () {
     ]},
     {name: 'Solutions', blurb: 'Why a solute dissolves — or doesn’t', pages: [
       {id: 'dissolve', app: '#dApp', nav: 'Dissolving', title: 'Dissolving', init: () => window.initDissolve(),
-       desc: 'Watch dissolving as three steps — separate the solute, separate the solvent, mix — with the enthalpy of each, then run a live particle simulation. Set the solute–solute, solvent–solvent and solute–solvent attractions yourself or pick NaCl, NH₄NO₃, CaCl₂, ethanol, I₂ or oil.',
+       desc: 'Watch dissolving as three steps — separate the solute, separate the solvent, mix — with the enthalpy of each. Set the solute–solute, solvent–solvent and solute–solvent attractions yourself or pick NaCl, NH₄NO₃, CaCl₂, ethanol, I₂ or oil.',
        tags: ['Three steps', 'Enthalpy of solution', 'Like dissolves like']}
     ]},
     {name: 'Thermochemistry', blurb: 'Measuring the heat of a reaction', pages: [
